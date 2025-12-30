@@ -1,14 +1,16 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import * as logger from '@/lib/logger';
+import { getMemoryById } from '@/lib/db/memories';
 import { generateId } from '@/lib/id';
 import { useMemoriesStore } from '@/store/memoriesStore';
 import { Memory } from '@/types/models';
 
 type MemoryEditorParams = {
+  id?: string | string[];
   latitude?: string | string[];
   longitude?: string | string[];
   happenedAt?: string | string[];
@@ -33,9 +35,15 @@ export default function MemoryEditorModal() {
   const params = useLocalSearchParams<MemoryEditorParams>();
   const upsert = useMemoriesStore((state) => state.upsert);
 
+  const memoryId = getSingleParam(params.id);
+  const isEditing = Boolean(memoryId);
+
   const latitudeFromParams = parseNumberParam(params.latitude);
   const longitudeFromParams = parseNumberParam(params.longitude);
-  const initialHappenedAt = getSingleParam(params.happenedAt) ?? new Date().toISOString();
+  const initialHappenedAt = useMemo(
+    () => getSingleParam(params.happenedAt) ?? new Date().toISOString(),
+    [params.happenedAt],
+  );
 
   const fallbackLocation = useMemo(
     () => ({
@@ -45,16 +53,73 @@ export default function MemoryEditorModal() {
     [],
   );
 
-  const latitude = latitudeFromParams ?? fallbackLocation.latitude;
-  const longitude = longitudeFromParams ?? fallbackLocation.longitude;
-
   const [title, setTitle] = useState('');
   const [happenedAt, setHappenedAt] = useState(initialHappenedAt);
   const [body, setBody] = useState('');
+  const [placeLabel, setPlaceLabel] = useState('Pinned location'); // TODO: replace with reverse geocoded label
+  const [existingMemory, setExistingMemory] = useState<Memory | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(isEditing);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!memoryId) return;
+
+    let isMounted = true;
+
+    const loadMemory = async () => {
+      setError(null);
+      setIsLoading(true);
+
+      try {
+        const record = await getMemoryById(memoryId);
+
+        if (!isMounted) return;
+
+        if (!record) {
+          setError('Memory not found.');
+          return;
+        }
+
+        setExistingMemory(record);
+        setTitle(record.title ?? '');
+        setBody(record.body ?? '');
+        setHappenedAt(record.happenedAt);
+        setPlaceLabel(record.placeLabel ?? '');
+      } catch (loadError) {
+        if (!isMounted) return;
+        logger.error('Failed to load memory for editing', memoryId, loadError);
+        setError('Failed to load memory. Please try again.');
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadMemory();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [memoryId]);
+
+  const latitude = existingMemory
+    ? existingMemory.latitude
+    : latitudeFromParams ?? fallbackLocation.latitude;
+  const longitude = existingMemory
+    ? existingMemory.longitude
+    : longitudeFromParams ?? fallbackLocation.longitude;
 
   const handleSave = async () => {
+    if (isSaving || (isEditing && !existingMemory) || isLoading) {
+      return;
+    }
+
     const trimmedTitle = title.trim();
     const parsedDate = new Date(happenedAt);
+    const trimmedPlaceLabel = placeLabel.trim();
+    const trimmedBody = body.trim();
 
     if (!trimmedTitle) {
       Alert.alert('Title required', 'Please add a title before saving.');
@@ -66,24 +131,40 @@ export default function MemoryEditorModal() {
       return;
     }
 
+    setIsSaving(true);
+    setError(null);
+
     const now = new Date().toISOString();
-    const memory: Memory = {
-      id: generateId(),
-      title: trimmedTitle,
-      body: body.trim() || undefined,
-      createdAt: now,
-      happenedAt: parsedDate.toISOString(),
-      latitude,
-      longitude,
-      placeLabel: 'Pinned location', // TODO: replace with reverse geocoded label
-      updatedAt: now,
-    };
+
+    const memoryToSave: Memory = existingMemory
+      ? {
+          ...existingMemory,
+          title: trimmedTitle,
+          body: trimmedBody || undefined,
+          happenedAt: parsedDate.toISOString(),
+          placeLabel: trimmedPlaceLabel || undefined,
+          updatedAt: now,
+        }
+      : {
+          id: generateId(),
+          title: trimmedTitle,
+          body: trimmedBody || undefined,
+          createdAt: now,
+          happenedAt: parsedDate.toISOString(),
+          latitude,
+          longitude,
+          placeLabel: trimmedPlaceLabel || undefined,
+          updatedAt: now,
+        };
 
     try {
-      await upsert(memory);
+      await upsert(memoryToSave);
       router.back();
-    } catch (error) {
-      logger.error('Failed to save memory', error);
+    } catch (saveError) {
+      logger.error('Failed to save memory', memoryToSave.id, saveError);
+      setError('Failed to save memory. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -91,11 +172,14 @@ export default function MemoryEditorModal() {
     router.back();
   };
 
+  const subtitle = isEditing ? 'Update the fields to edit this memory.' : 'Fill in the basics to add a memory to your timeline.';
+
   return (
     <Screen>
       <View style={styles.header}>
-        <Text style={styles.title}>New Memory</Text>
-        <Text style={styles.description}>Fill in the basics to add a memory to your timeline.</Text>
+        <Text style={styles.title}>{isEditing ? 'Edit Memory' : 'New Memory'}</Text>
+        <Text style={styles.description}>{subtitle}</Text>
+        {error ? <Text style={[styles.description, styles.errorText]}>{error}</Text> : null}
       </View>
 
       <View style={styles.fieldGroup}>
@@ -105,6 +189,7 @@ export default function MemoryEditorModal() {
           onChangeText={setTitle}
           placeholder="Enter a title"
           style={styles.input}
+          editable={!isLoading}
         />
       </View>
 
@@ -116,6 +201,18 @@ export default function MemoryEditorModal() {
           placeholder="2024-06-01T12:00:00Z"
           autoCapitalize="none"
           style={styles.input}
+          editable={!isLoading}
+        />
+      </View>
+
+      <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Place Label (optional)</Text>
+        <TextInput
+          value={placeLabel}
+          onChangeText={setPlaceLabel}
+          placeholder="Pinned location"
+          style={styles.input}
+          editable={!isLoading}
         />
       </View>
 
@@ -127,15 +224,16 @@ export default function MemoryEditorModal() {
           placeholder="Add a quick note"
           multiline
           style={[styles.input, styles.multilineInput]}
+          editable={!isLoading}
         />
       </View>
 
       <View style={styles.actions}>
-        <Pressable style={[styles.button, styles.secondaryButton]} onPress={handleCancel}>
+        <Pressable style={[styles.button, styles.secondaryButton]} onPress={handleCancel} disabled={isSaving}>
           <Text style={[styles.buttonText, styles.secondaryButtonText]}>Cancel</Text>
         </Pressable>
-        <Pressable style={styles.button} onPress={handleSave}>
-          <Text style={styles.buttonText}>Save</Text>
+        <Pressable style={styles.button} onPress={handleSave} disabled={isSaving || isLoading}>
+          <Text style={styles.buttonText}>{isSaving ? 'Saving...' : 'Save'}</Text>
         </Pressable>
       </View>
     </Screen>
@@ -198,5 +296,8 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     color: '#0a84ff',
+  },
+  errorText: {
+    color: '#ff3b30',
   },
 });
