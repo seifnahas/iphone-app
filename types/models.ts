@@ -1,3 +1,11 @@
+export interface SpotifyTrack {
+  spotifyTrackId: string;
+  title: string;
+  artist: string;
+  albumArtUrl?: string;
+  previewUrl?: string;
+}
+
 export interface Memory {
   id: string;
   title?: string;
@@ -8,6 +16,7 @@ export interface Memory {
   longitude: number;
   placeLabel?: string;
   updatedAt: string;
+  song?: SpotifyTrack;
 }
 
 export interface MemoryMedia {

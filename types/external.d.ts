@@ -31,3 +31,31 @@ declare module 'zustand' {
     initializer: (set: SetState<T>, get: GetState<T>, api: StoreApi<T>) => T,
   ): (<U>(selector: (state: T) => U) => U) & StoreApi<T>;
 }
+
+declare module 'expo-av' {
+  export namespace Audio {
+    type AVPlaybackSource = { uri: string };
+    type AVPlaybackStatus = {
+      isLoaded: boolean;
+      didJustFinish?: boolean;
+    };
+
+    type AVPlaybackStatusSuccess = AVPlaybackStatus & {
+      isLoaded: true;
+    };
+
+    type AVPlaybackStatusToSet = {
+      shouldPlay?: boolean;
+    };
+
+    class Sound {
+      static createAsync(
+        source: AVPlaybackSource,
+        initialStatus?: AVPlaybackStatusToSet,
+      ): Promise<{ sound: Sound; status: AVPlaybackStatusSuccess }>;
+      unloadAsync(): Promise<void>;
+      pauseAsync(): Promise<void>;
+      setOnPlaybackStatusUpdate(callback?: (status: AVPlaybackStatus) => void): void;
+    }
+  }
+}

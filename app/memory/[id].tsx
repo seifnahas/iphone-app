@@ -1,11 +1,12 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Alert, Image, StyleSheet, Text, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { colors, spacing, text as textTokens } from '@/components/ui/tokens';
+import { colors, radius, spacing, text as textTokens } from '@/components/ui/tokens';
+import { getState, pause, play, stop, subscribe, PlaybackState } from '@/lib/audio/playbackManager';
 import * as logger from '@/lib/logger';
 import { getMemoryById } from '@/lib/db/memories';
 import { listMediaByMemoryId } from '@/lib/db/media';
@@ -22,47 +23,67 @@ export default function MemoryDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [playbackState, setPlaybackState] = useState<PlaybackState>(getState());
+
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+
+      const loadMemory = async () => {
+        setError(null);
+
+        try {
+          const [memoryRecord, mediaItems] = await Promise.all([
+            getMemoryById(memoryId),
+            listMediaByMemoryId(memoryId),
+          ]);
+
+          if (!isMounted) return;
+
+          if (!memoryRecord) {
+            setMemory(null);
+            setMediaCount(0);
+            setError('Memory not found.');
+            return;
+          }
+
+          setMemory(memoryRecord);
+          setMediaCount(mediaItems.length);
+        } catch (loadError) {
+          if (!isMounted) return;
+          logger.error('Failed to load memory detail', memoryId, loadError);
+          setError('Failed to load memory. Please try again.');
+        } finally {
+          if (isMounted) {
+            setIsLoading(false);
+          }
+        }
+      };
+
+      loadMemory();
+
+      return () => {
+        isMounted = false;
+      };
+    }, [memoryId]),
+  );
 
   useEffect(() => {
-    let isMounted = true;
+    const unsubscribe = subscribe((state) => setPlaybackState(state));
+    return unsubscribe;
+  }, []);
 
-    const loadMemory = async () => {
-      setError(null);
-
-      try {
-        const [memoryRecord, mediaItems] = await Promise.all([
-          getMemoryById(memoryId),
-          listMediaByMemoryId(memoryId),
-        ]);
-
-        if (!isMounted) return;
-
-        if (!memoryRecord) {
-          setMemory(null);
-          setMediaCount(0);
-          setError('Memory not found.');
-          return;
-        }
-
-        setMemory(memoryRecord);
-        setMediaCount(mediaItems.length);
-      } catch (loadError) {
-        if (!isMounted) return;
-        logger.error('Failed to load memory detail', memoryId, loadError);
-        setError('Failed to load memory. Please try again.');
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadMemory();
+  useEffect(() => {
+    if (memory?.song?.previewUrl) {
+      play(memory.song);
+    } else {
+      stop();
+    }
 
     return () => {
-      isMounted = false;
+      stop();
     };
-  }, [memoryId]);
+  }, [memory?.song?.spotifyTrackId, memory?.song?.previewUrl]);
 
   const handleEdit = () => {
     router.push({ pathname: '/(modals)/memory-editor', params: { id: memoryId } });
@@ -97,6 +118,20 @@ export default function MemoryDetailScreen() {
     ]);
   };
 
+  const handlePlayPause = () => {
+    if (!memory?.song?.previewUrl) return;
+
+    if (playbackState.status === 'playing') {
+      pause();
+    } else {
+      play(memory.song);
+    }
+  };
+
+  const isSongPlaying =
+    playbackState.trackId === memory?.song?.spotifyTrackId &&
+    playbackState.status === 'playing';
+
   return (
     <Screen scroll>
       <View style={styles.header}>
@@ -129,6 +164,41 @@ export default function MemoryDetailScreen() {
             </View>
             <Text style={styles.bodyText}>{memory.body?.trim() || 'No notes yet.'}</Text>
           </Card>
+
+          {memory.song ? (
+            <Card>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Song</Text>
+              </View>
+              <View style={styles.songRow}>
+                <Image
+                  source={
+                    memory.song.albumArtUrl
+                      ? { uri: memory.song.albumArtUrl }
+                      : require('@/assets/images/icon.png')
+                  }
+                  style={styles.songArt}
+                />
+                <View style={styles.songMeta}>
+                  <Text style={styles.songTitle}>{memory.song.title}</Text>
+                  <Text style={styles.songArtist}>{memory.song.artist}</Text>
+                  {!memory.song.previewUrl ? (
+                    <Text style={styles.previewWarning}>Preview not available.</Text>
+                  ) : playbackState.error ? (
+                    <Text style={styles.previewWarning}>{playbackState.error}</Text>
+                  ) : null}
+                </View>
+                {memory.song.previewUrl ? (
+                  <Button
+                    title={isSongPlaying ? 'Pause' : 'Play'}
+                    onPress={handlePlayPause}
+                    size="sm"
+                    variant="secondary"
+                  />
+                ) : null}
+              </View>
+            </Card>
+          ) : null}
 
           <Card>
             <View style={styles.sectionHeader}>
@@ -240,6 +310,34 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   errorText: {
+    color: colors.destructive,
+  },
+  songRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    alignItems: 'center',
+  },
+  songArt: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.sm,
+    backgroundColor: colors.border,
+  },
+  songMeta: {
+    flex: 1,
+    gap: 2,
+  },
+  songTitle: {
+    ...textTokens.body,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  songArtist: {
+    ...textTokens.caption,
+    color: colors.mutedText,
+  },
+  previewWarning: {
+    ...textTokens.caption,
     color: colors.destructive,
   },
 });
