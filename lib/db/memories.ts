@@ -3,11 +3,37 @@ import { Memory } from '@/types/models';
 
 import { openDb } from './index';
 
+type MemoryRow = Omit<Memory, 'song'> & {
+  songSpotifyTrackId?: string | null;
+  songTitle?: string | null;
+  songArtist?: string | null;
+  songAlbumArtUrl?: string | null;
+  songPreviewUrl?: string | null;
+};
+
+function mapRowToMemory(row: MemoryRow): Memory {
+  const { songSpotifyTrackId, songTitle, songArtist, songAlbumArtUrl, songPreviewUrl, ...rest } = row;
+
+  const hasSong = songSpotifyTrackId && songTitle && songArtist;
+  return {
+    ...rest,
+    song: hasSong
+      ? {
+          spotifyTrackId: songSpotifyTrackId,
+          title: songTitle,
+          artist: songArtist,
+          albumArtUrl: songAlbumArtUrl ?? undefined,
+          previewUrl: songPreviewUrl ?? undefined,
+        }
+      : undefined,
+  };
+}
+
 export async function listMemories(): Promise<Memory[]> {
   try {
     const db = await openDb();
-    const rows = await db.getAllAsync<Memory>('SELECT * FROM memories ORDER BY happenedAt DESC');
-    return rows;
+    const rows = await db.getAllAsync<MemoryRow>('SELECT * FROM memories ORDER BY happenedAt DESC');
+    return rows.map(mapRowToMemory);
   } catch (error) {
     logger.error('Failed to list memories', error);
     throw error;
@@ -17,8 +43,8 @@ export async function listMemories(): Promise<Memory[]> {
 export async function getMemoryById(id: string): Promise<Memory | null> {
   try {
     const db = await openDb();
-    const memory = await db.getFirstAsync<Memory>('SELECT * FROM memories WHERE id = ?', [id]);
-    return memory ?? null;
+    const memory = await db.getFirstAsync<MemoryRow>('SELECT * FROM memories WHERE id = ?', [id]);
+    return memory ? mapRowToMemory(memory) : null;
   } catch (error) {
     logger.error('Failed to get memory by id', id, error);
     throw error;
@@ -30,8 +56,8 @@ export async function upsertMemory(memory: Memory): Promise<void> {
     const db = await openDb();
     await db.runAsync(
       `
-      INSERT INTO memories (id, title, body, createdAt, happenedAt, latitude, longitude, placeLabel, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO memories (id, title, body, createdAt, happenedAt, latitude, longitude, placeLabel, updatedAt, songSpotifyTrackId, songTitle, songArtist, songAlbumArtUrl, songPreviewUrl)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         title = excluded.title,
         body = excluded.body,
@@ -40,7 +66,12 @@ export async function upsertMemory(memory: Memory): Promise<void> {
         latitude = excluded.latitude,
         longitude = excluded.longitude,
         placeLabel = excluded.placeLabel,
-        updatedAt = excluded.updatedAt;
+        updatedAt = excluded.updatedAt,
+        songSpotifyTrackId = excluded.songSpotifyTrackId,
+        songTitle = excluded.songTitle,
+        songArtist = excluded.songArtist,
+        songAlbumArtUrl = excluded.songAlbumArtUrl,
+        songPreviewUrl = excluded.songPreviewUrl;
     `,
       [
         memory.id,
@@ -52,6 +83,11 @@ export async function upsertMemory(memory: Memory): Promise<void> {
         memory.longitude,
         memory.placeLabel ?? null,
         memory.updatedAt,
+        memory.song?.spotifyTrackId ?? null,
+        memory.song?.title ?? null,
+        memory.song?.artist ?? null,
+        memory.song?.albumArtUrl ?? null,
+        memory.song?.previewUrl ?? null,
       ],
     );
   } catch (error) {

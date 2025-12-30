@@ -1,5 +1,5 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -18,7 +18,8 @@ import * as logger from '@/lib/logger';
 import { getMemoryById } from '@/lib/db/memories';
 import { generateId } from '@/lib/id';
 import { useMemoriesStore } from '@/store/memoriesStore';
-import { Memory } from '@/types/models';
+import { useSongSelectionStore } from '@/store/songSelectionStore';
+import { Memory, SpotifyTrack } from '@/types/models';
 
 type MemoryEditorParams = {
   id?: string | string[];
@@ -45,6 +46,7 @@ export default function MemoryEditorModal() {
   const router = useRouter();
   const params = useLocalSearchParams<MemoryEditorParams>();
   const upsert = useMemoriesStore((state) => state.upsert);
+  const consumePendingSong = useSongSelectionStore((state) => state.consumePendingSong);
 
   const memoryId = getSingleParam(params.id);
   const isEditing = Boolean(memoryId);
@@ -72,6 +74,7 @@ export default function MemoryEditorModal() {
   const [isLoading, setIsLoading] = useState<boolean>(isEditing);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [song, setSong] = useState<SpotifyTrack | undefined>(undefined);
 
   useEffect(() => {
     if (!memoryId) return;
@@ -97,6 +100,7 @@ export default function MemoryEditorModal() {
         setBody(record.body ?? '');
         setHappenedAt(record.happenedAt);
         setPlaceLabel(record.placeLabel ?? '');
+        setSong(record.song ?? undefined);
       } catch (loadError) {
         if (!isMounted) return;
         logger.error('Failed to load memory for editing', memoryId, loadError);
@@ -114,6 +118,15 @@ export default function MemoryEditorModal() {
       isMounted = false;
     };
   }, [memoryId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const pending = consumePendingSong();
+      if (pending) {
+        setSong(pending);
+      }
+    }, [consumePendingSong]),
+  );
 
   const latitude = existingMemory
     ? existingMemory.latitude
@@ -159,6 +172,7 @@ export default function MemoryEditorModal() {
           happenedAt: parsedDate.toISOString(),
           placeLabel: trimmedPlaceLabel || undefined,
           updatedAt: now,
+          song,
         }
       : {
           id: generateId(),
@@ -170,6 +184,7 @@ export default function MemoryEditorModal() {
           longitude,
           placeLabel: trimmedPlaceLabel || undefined,
           updatedAt: now,
+          song,
         };
 
     try {
@@ -185,6 +200,14 @@ export default function MemoryEditorModal() {
 
   const handleCancel = () => {
     router.back();
+  };
+
+  const handleRemoveSong = () => {
+    setSong(undefined);
+  };
+
+  const handleOpenSongPicker = () => {
+    router.push('/(modals)/song-picker');
   };
 
   const subtitle = isEditing
@@ -239,6 +262,48 @@ export default function MemoryEditorModal() {
                 multiline
                 testID="memory-body"
               />
+              <View style={styles.songSection}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Song</Text>
+                  {song ? (
+                    <View style={styles.songActions}>
+                      <Button
+                        title="Change"
+                        size="sm"
+                        variant="secondary"
+                        onPress={handleOpenSongPicker}
+                        testID="change-song"
+                      />
+                      <Button
+                        title="Remove"
+                        size="sm"
+                        variant="destructive"
+                        onPress={handleRemoveSong}
+                        testID="remove-song"
+                      />
+                    </View>
+                  ) : (
+                    <Button
+                      title="Add song"
+                      size="sm"
+                      variant="primary"
+                      onPress={handleOpenSongPicker}
+                      testID="add-song"
+                    />
+                  )}
+                </View>
+                {song ? (
+                  <View style={styles.songSummary}>
+                    <Text style={styles.songTitle}>{song.title}</Text>
+                    <Text style={styles.songArtist}>{song.artist}</Text>
+                    {!song.previewUrl ? (
+                      <Text style={styles.previewWarning}>Preview not available.</Text>
+                    ) : null}
+                  </View>
+                ) : (
+                  <Text style={styles.description}>Attach a Spotify song preview to this memory.</Text>
+                )}
+              </View>
             </View>
           </Card>
 
@@ -300,5 +365,43 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
+  },
+  description: {
+    ...textTokens.body,
+    color: colors.mutedText,
+  },
+  songSection: {
+    gap: spacing.sm,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  sectionTitle: {
+    ...textTokens.body,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  songActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  songSummary: {
+    gap: spacing.xs,
+  },
+  songTitle: {
+    ...textTokens.body,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  songArtist: {
+    ...textTokens.caption,
+    color: colors.mutedText,
+  },
+  previewWarning: {
+    ...textTokens.caption,
+    color: colors.destructive,
   },
 });

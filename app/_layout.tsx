@@ -31,6 +31,10 @@ export default function RootLayout() {
             name="(modals)/memory-editor"
             options={{ presentation: 'modal', headerShown: false }}
           />
+          <Stack.Screen
+            name="(modals)/song-picker"
+            options={{ presentation: 'modal', headerShown: false }}
+          />
 
           <Stack.Screen name="memory/[id]" options={{ title: 'Memory' }} />
         </Stack>
