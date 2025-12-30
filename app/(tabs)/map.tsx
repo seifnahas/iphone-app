@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import MapView, { MapPressEvent, Marker, Region } from 'react-native-maps';
+import MapView, { LongPressEvent, Marker, Region } from 'react-native-maps';
 
 import { Screen } from '@/components/Screen';
 import { useMemoriesStore } from '@/store/memoriesStore';
@@ -36,7 +36,7 @@ export default function MapScreen() {
     router.push(`/memory/${id}`);
   };
 
-  const handleLongPress = (event: MapPressEvent) => {
+  const handleLongPress = (event: LongPressEvent) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
     const happenedAt = new Date().toISOString();
 
