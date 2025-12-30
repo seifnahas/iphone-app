@@ -1,8 +1,19 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { Screen } from '@/components/Screen';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { TextField } from '@/components/ui/TextField';
+import { colors, spacing, text as textTokens } from '@/components/ui/tokens';
 import * as logger from '@/lib/logger';
 import { getMemoryById } from '@/lib/db/memories';
 import { generateId } from '@/lib/id';
@@ -111,22 +122,26 @@ export default function MemoryEditorModal() {
     ? existingMemory.longitude
     : longitudeFromParams ?? fallbackLocation.longitude;
 
+  const trimmedTitle = title.trim();
+  const parsedDate = new Date(happenedAt);
+  const isTitleValid = Boolean(trimmedTitle);
+  const isDateValid = !Number.isNaN(parsedDate.getTime());
+  const isSaveDisabled = isSaving || isLoading || !isTitleValid || !isDateValid;
+
   const handleSave = async () => {
     if (isSaving || (isEditing && !existingMemory) || isLoading) {
       return;
     }
 
-    const trimmedTitle = title.trim();
-    const parsedDate = new Date(happenedAt);
     const trimmedPlaceLabel = placeLabel.trim();
     const trimmedBody = body.trim();
 
-    if (!trimmedTitle) {
+    if (!isTitleValid) {
       Alert.alert('Title required', 'Please add a title before saving.');
       return;
     }
 
-    if (Number.isNaN(parsedDate.getTime())) {
+    if (!isDateValid) {
       Alert.alert('Invalid date', 'Use a valid ISO date (e.g. 2024-06-01T12:00:00Z).');
       return;
     }
@@ -172,132 +187,118 @@ export default function MemoryEditorModal() {
     router.back();
   };
 
-  const subtitle = isEditing ? 'Update the fields to edit this memory.' : 'Fill in the basics to add a memory to your timeline.';
+  const subtitle = isEditing
+    ? 'Update the fields to edit this memory.'
+    : 'Fill in the basics to add a memory to your timeline.';
 
   return (
-    <Screen>
-      <View style={styles.header}>
-        <Text style={styles.title}>{isEditing ? 'Edit Memory' : 'New Memory'}</Text>
-        <Text style={styles.description}>{subtitle}</Text>
-        {error ? <Text style={[styles.description, styles.errorText]}>{error}</Text> : null}
-      </View>
+    <Screen scroll>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.flex}
+      >
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <Text style={styles.title}>{isEditing ? 'Edit Memory' : 'New Memory'}</Text>
+            <Text style={styles.subtitle}>{subtitle}</Text>
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          </View>
 
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Title *</Text>
-        <TextInput
-          value={title}
-          onChangeText={setTitle}
-          placeholder="Enter a title"
-          style={styles.input}
-          editable={!isLoading}
-        />
-      </View>
+          <Card style={styles.card}>
+            <View style={styles.fieldStack}>
+              <TextField
+                label="Title *"
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Enter a title"
+                errorText={!isTitleValid ? 'Title is required' : undefined}
+                testID="memory-title"
+              />
+              <TextField
+                label="Happened At (ISO) *"
+                value={happenedAt}
+                onChangeText={setHappenedAt}
+                placeholder="2024-06-01T12:00:00Z"
+                autoCapitalize="none"
+                helperText="Use an ISO date-time (UTC)."
+                errorText={!isDateValid ? 'Enter a valid ISO date' : undefined}
+                testID="memory-happened-at"
+              />
+              <TextField
+                label="Place Label (optional)"
+                value={placeLabel}
+                onChangeText={setPlaceLabel}
+                placeholder="Pinned location"
+                testID="memory-place-label"
+              />
+              <TextField
+                label="Body (optional)"
+                value={body}
+                onChangeText={setBody}
+                placeholder="Add a quick note"
+                multiline
+                testID="memory-body"
+              />
+            </View>
+          </Card>
 
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Happened At (ISO) *</Text>
-        <TextInput
-          value={happenedAt}
-          onChangeText={setHappenedAt}
-          placeholder="2024-06-01T12:00:00Z"
-          autoCapitalize="none"
-          style={styles.input}
-          editable={!isLoading}
-        />
-      </View>
-
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Place Label (optional)</Text>
-        <TextInput
-          value={placeLabel}
-          onChangeText={setPlaceLabel}
-          placeholder="Pinned location"
-          style={styles.input}
-          editable={!isLoading}
-        />
-      </View>
-
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Body (optional)</Text>
-        <TextInput
-          value={body}
-          onChangeText={setBody}
-          placeholder="Add a quick note"
-          multiline
-          style={[styles.input, styles.multilineInput]}
-          editable={!isLoading}
-        />
-      </View>
-
-      <View style={styles.actions}>
-        <Pressable style={[styles.button, styles.secondaryButton]} onPress={handleCancel} disabled={isSaving}>
-          <Text style={[styles.buttonText, styles.secondaryButtonText]}>Cancel</Text>
-        </Pressable>
-        <Pressable style={styles.button} onPress={handleSave} disabled={isSaving || isLoading}>
-          <Text style={styles.buttonText}>{isSaving ? 'Saving...' : 'Save'}</Text>
-        </Pressable>
-      </View>
+          <View style={styles.actions}>
+            <Button
+              title="Cancel"
+              onPress={handleCancel}
+              variant="secondary"
+              disabled={isSaving}
+              style={styles.actionButton}
+            />
+            <Button
+              title={isSaving ? 'Saving...' : 'Save'}
+              onPress={handleSave}
+              variant="primary"
+              loading={isSaving}
+              disabled={isSaveDisabled}
+              style={styles.actionButton}
+            />
+          </View>
+        </View>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    gap: spacing.lg,
+  },
   header: {
-    gap: 8,
+    gap: spacing.xs,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '600',
+    ...textTokens.title,
+    color: colors.text,
   },
-  description: {
-    fontSize: 16,
-    color: '#4a4a4a',
+  subtitle: {
+    ...textTokens.body,
+    color: colors.mutedText,
   },
-  fieldGroup: {
-    gap: 6,
+  errorText: {
+    ...textTokens.caption,
+    color: colors.destructive,
   },
-  label: {
-    fontSize: 14,
-    color: '#4a4a4a',
-    fontWeight: '500',
+  card: {
+    gap: spacing.md,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#d0d0d0',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    backgroundColor: '#ffffff',
-  },
-  multilineInput: {
-    minHeight: 100,
-    textAlignVertical: 'top',
+  fieldStack: {
+    gap: spacing.md,
   },
   actions: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
+    gap: spacing.md,
   },
-  button: {
-    backgroundColor: '#0a84ff',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 10,
+  actionButton: {
     flex: 1,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  secondaryButton: {
-    backgroundColor: '#f2f2f2',
-  },
-  secondaryButtonText: {
-    color: '#0a84ff',
-  },
-  errorText: {
-    color: '#ff3b30',
   },
 });
