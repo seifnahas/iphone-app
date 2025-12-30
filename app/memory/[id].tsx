@@ -1,8 +1,11 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { colors, spacing, text as textTokens } from '@/components/ui/tokens';
 import * as logger from '@/lib/logger';
 import { getMemoryById } from '@/lib/db/memories';
 import { listMediaByMemoryId } from '@/lib/db/media';
@@ -68,7 +71,7 @@ export default function MemoryDetailScreen() {
   const confirmDelete = () => {
     if (!memory || isDeleting) return;
 
-    Alert.alert('Delete memory', 'This will remove the memory and its media.', [
+    Alert.alert('Delete memory?', undefined, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -95,53 +98,77 @@ export default function MemoryDetailScreen() {
   };
 
   return (
-    <Screen>
+    <Screen scroll>
       <View style={styles.header}>
         <Text style={styles.title}>Memory Detail</Text>
         <Text style={styles.description}>Viewing memory {memoryId}.</Text>
       </View>
       {isLoading ? (
-        <Text style={styles.description}>Loading...</Text>
+        <Card>
+          <Text style={styles.description}>Loading...</Text>
+        </Card>
       ) : error ? (
-        <Text style={[styles.description, styles.errorText]}>{error}</Text>
+        <Card>
+          <Text style={[styles.description, styles.errorText]}>{error}</Text>
+        </Card>
       ) : memory ? (
         <>
-          <View style={styles.card}>
-            <Text style={styles.fieldLabel}>Title</Text>
-            <Text style={styles.fieldValue}>{memory.title || 'Untitled'}</Text>
+          <Card>
+            <View style={styles.cardHeader}>
+              <Text style={styles.memoryTitle}>{memory.title || 'Untitled'}</Text>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaText}>{memory.happenedAt}</Text>
+                {memory.placeLabel ? <Text style={styles.metaText}>{memory.placeLabel}</Text> : null}
+              </View>
+            </View>
+          </Card>
 
-            <Text style={styles.fieldLabel}>When</Text>
-            <Text style={styles.fieldValue}>{memory.happenedAt}</Text>
+          <Card>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Body</Text>
+            </View>
+            <Text style={styles.bodyText}>{memory.body?.trim() || 'No notes yet.'}</Text>
+          </Card>
 
-            <Text style={styles.fieldLabel}>Location</Text>
-            <Text style={styles.fieldValue}>
-              {memory.latitude.toFixed(4)}, {memory.longitude.toFixed(4)}
-            </Text>
+          <Card>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Location</Text>
+            </View>
+            <View style={styles.detailList}>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Latitude</Text>
+                <Text style={styles.detailValue}>{memory.latitude.toFixed(4)}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Longitude</Text>
+                <Text style={styles.detailValue}>{memory.longitude.toFixed(4)}</Text>
+              </View>
+            </View>
+          </Card>
 
-            <Text style={styles.fieldLabel}>Body</Text>
-            <Text style={styles.fieldValue}>{memory.body || 'No notes yet.'}</Text>
-
-            <Text style={styles.fieldLabel}>Media</Text>
-            <Text style={styles.fieldValue}>{mediaCount} item(s)</Text>
-          </View>
+          <Card>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Media</Text>
+            </View>
+            <Text style={styles.bodyText}>{mediaCount} item(s)</Text>
+          </Card>
 
           <View style={styles.actions}>
-            <Pressable style={[styles.button, styles.secondaryButton]} onPress={handleEdit}>
-              <Text style={[styles.buttonText, styles.secondaryButtonText]}>Edit</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.button, styles.dangerButton]}
+            <Button title="Edit" variant="primary" onPress={handleEdit} style={styles.actionButton} />
+            <Button
+              title={isDeleting ? 'Deleting...' : 'Delete'}
+              variant="destructive"
               onPress={confirmDelete}
               disabled={isDeleting}
-            >
-              <Text style={[styles.buttonText, styles.dangerButtonText]}>
-                {isDeleting ? 'Deleting...' : 'Delete'}
-              </Text>
-            </Pressable>
+              loading={isDeleting}
+              style={styles.actionButton}
+            />
           </View>
         </>
       ) : (
-        <Text style={styles.description}>Memory not found.</Text>
+        <Card>
+          <Text style={styles.description}>Memory not found.</Text>
+        </Card>
       )}
     </Screen>
   );
@@ -149,64 +176,70 @@ export default function MemoryDetailScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    gap: 8,
+    gap: spacing.xs,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '600',
+    ...textTokens.title,
+    color: colors.text,
   },
   description: {
-    fontSize: 16,
-    color: '#4a4a4a',
+    ...textTokens.caption,
+    color: colors.mutedText,
   },
-  card: {
-    marginTop: 8,
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: '#f4f4f4',
-    gap: 6,
+  cardHeader: {
+    gap: spacing.xs,
   },
-  fieldLabel: {
-    fontSize: 14,
-    color: '#6b6b6b',
+  memoryTitle: {
+    ...textTokens.title,
+    color: colors.text,
   },
-  fieldValue: {
-    fontSize: 16,
-    fontWeight: '600',
+  metaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  metaText: {
+    ...textTokens.caption,
+    color: colors.mutedText,
+  },
+  sectionHeader: {
+    marginBottom: spacing.sm,
+  },
+  sectionTitle: {
+    ...textTokens.caption,
+    color: colors.mutedText,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  bodyText: {
+    ...textTokens.body,
+    color: colors.text,
+  },
+  detailList: {
+    gap: spacing.sm,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  detailLabel: {
+    ...textTokens.caption,
+    color: colors.mutedText,
+  },
+  detailValue: {
+    ...textTokens.body,
+    color: colors.text,
   },
   actions: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 12,
+    gap: spacing.sm,
+    marginTop: spacing.md,
   },
-  button: {
-    backgroundColor: '#0a84ff',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 10,
+  actionButton: {
     flex: 1,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  secondaryButton: {
-    backgroundColor: '#f2f2f2',
-  },
-  secondaryButtonText: {
-    color: '#0a84ff',
-  },
-  dangerButton: {
-    backgroundColor: '#ffecec',
-    borderWidth: 1,
-    borderColor: '#ff3b30',
-  },
-  dangerButtonText: {
-    color: '#ff3b30',
   },
   errorText: {
-    color: '#ff3b30',
+    color: colors.destructive,
   },
 });
