@@ -1,5 +1,5 @@
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
@@ -8,11 +8,48 @@ import { generateId } from '@/lib/id';
 import { useMemoriesStore } from '@/store/memoriesStore';
 import { Memory } from '@/types/models';
 
+type MemoryEditorParams = {
+  latitude?: string | string[];
+  longitude?: string | string[];
+  happenedAt?: string | string[];
+};
+
+const parseNumberParam = (value?: string | string[]) => {
+  if (!value) return null;
+
+  const raw = Array.isArray(value) ? value[0] : value;
+  const parsed = Number(raw);
+
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const getSingleParam = (value?: string | string[]) => {
+  if (!value) return null;
+  return Array.isArray(value) ? value[0] : value;
+};
+
 export default function MemoryEditorModal() {
   const router = useRouter();
+  const params = useLocalSearchParams<MemoryEditorParams>();
   const upsert = useMemoriesStore((state) => state.upsert);
+
+  const latitudeFromParams = parseNumberParam(params.latitude);
+  const longitudeFromParams = parseNumberParam(params.longitude);
+  const initialHappenedAt = getSingleParam(params.happenedAt) ?? new Date().toISOString();
+
+  const fallbackLocation = useMemo(
+    () => ({
+      latitude: 51.5074 + (Math.random() - 0.5) * 0.1,
+      longitude: -0.1278 + (Math.random() - 0.5) * 0.1,
+    }),
+    [],
+  );
+
+  const latitude = latitudeFromParams ?? fallbackLocation.latitude;
+  const longitude = longitudeFromParams ?? fallbackLocation.longitude;
+
   const [title, setTitle] = useState('');
-  const [happenedAt, setHappenedAt] = useState(new Date().toISOString());
+  const [happenedAt, setHappenedAt] = useState(initialHappenedAt);
   const [body, setBody] = useState('');
 
   const handleSave = async () => {
@@ -36,10 +73,9 @@ export default function MemoryEditorModal() {
       body: body.trim() || undefined,
       createdAt: now,
       happenedAt: parsedDate.toISOString(),
-      // TODO: replace random location with map picker selection
-      latitude: 51.5074 + (Math.random() - 0.5) * 0.1,
-      longitude: -0.1278 + (Math.random() - 0.5) * 0.1,
-      placeLabel: 'London area',
+      latitude,
+      longitude,
+      placeLabel: 'Pinned location', // TODO: replace with reverse geocoded label
       updatedAt: now,
     };
 
