@@ -1,0 +1,49 @@
+import { create } from 'zustand';
+
+import * as logger from '@/lib/logger';
+import { deleteMemory, listMemories, upsertMemory } from '@/lib/db/memories';
+import { initDb } from '@/lib/db';
+import { Memory } from '@/types/models';
+
+interface MemoriesState {
+  memories: Memory[];
+  isHydrated: boolean;
+  hydrate: () => Promise<void>;
+  upsert: (memory: Memory) => Promise<void>;
+  remove: (id: string) => Promise<void>;
+}
+
+export const useMemoriesStore = create<MemoriesState>((set) => ({
+  memories: [],
+  isHydrated: false,
+  hydrate: async () => {
+    try {
+      await initDb();
+      const data = await listMemories();
+      set({ memories: data, isHydrated: true });
+    } catch (error) {
+      logger.error('Failed to hydrate memories', error);
+      set({ isHydrated: true });
+    }
+  },
+  upsert: async (memory) => {
+    try {
+      await initDb();
+      await upsertMemory(memory);
+      const data = await listMemories();
+      set({ memories: data, isHydrated: true });
+    } catch (error) {
+      logger.error('Failed to upsert memory', memory.id, error);
+    }
+  },
+  remove: async (id) => {
+    try {
+      await initDb();
+      await deleteMemory(id);
+      const data = await listMemories();
+      set({ memories: data, isHydrated: true });
+    } catch (error) {
+      logger.error('Failed to delete memory', id, error);
+    }
+  },
+}));
