@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import MapView, { LongPressEvent, Marker, Region } from 'react-native-maps';
 
 import { Screen } from '@/components/Screen';
+import { colors, radius, spacing, text as textTokens } from '@/components/ui/tokens';
 import { useMemoriesStore } from '@/store/memoriesStore';
 
 const DEFAULT_REGION: Region = {
@@ -54,39 +55,53 @@ export default function MapScreen() {
     <Screen>
       <View style={styles.header}>
         <Text style={styles.title}>Map</Text>
-        <Text style={styles.description}>Drop pins to add memories at any spot.</Text>
+        <Text style={styles.subtitle}>Long-press to add a memory</Text>
       </View>
 
-      <MapView style={styles.map} initialRegion={initialRegion} onLongPress={handleLongPress}>
-        {isHydrated &&
-          memories.map((memory) => (
-            <Marker
-              key={memory.id}
-              coordinate={{ latitude: memory.latitude, longitude: memory.longitude }}
-              onPress={() => handleMarkerPress(memory.id)}
-              title={memory.title || 'Memory'}
-            />
-          ))}
-      </MapView>
+      {!isHydrated ? <Text style={styles.loading}>Loading memories...</Text> : null}
+
+      <View style={styles.mapContainer}>
+        <MapView style={styles.map} initialRegion={initialRegion} onLongPress={handleLongPress}>
+          {isHydrated &&
+            memories.map((memory) => (
+              <Marker
+                key={memory.id}
+                coordinate={{ latitude: memory.latitude, longitude: memory.longitude }}
+                onPress={() => handleMarkerPress(memory.id)}
+                title={memory.title || 'Memory'}
+              />
+            ))}
+        </MapView>
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   header: {
-    gap: 8,
+    gap: spacing.xs,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '600',
+    ...textTokens.title,
+    color: colors.text,
   },
-  description: {
-    fontSize: 16,
-    color: '#4a4a4a',
+  subtitle: {
+    ...textTokens.caption,
+    color: colors.mutedText,
+  },
+  loading: {
+    ...textTokens.caption,
+    color: colors.mutedText,
+  },
+  mapContainer: {
+    flex: 1,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
   },
   map: {
     flex: 1,
-    borderRadius: 12,
-    overflow: 'hidden',
   },
 });
