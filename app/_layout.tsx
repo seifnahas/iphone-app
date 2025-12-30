@@ -1,7 +1,7 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
-import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -25,9 +25,16 @@ export default function RootLayout() {
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="(modals)" options={{ presentation: 'modal', headerShown: false }} />
+
+          {/* Register the actual modal route file, NOT the route group */}
+          <Stack.Screen
+            name="(modals)/memory-editor"
+            options={{ presentation: 'modal', headerShown: false }}
+          />
+
           <Stack.Screen name="memory/[id]" options={{ title: 'Memory' }} />
         </Stack>
+
         <StatusBar style="auto" />
       </ThemeProvider>
     </SafeAreaProvider>

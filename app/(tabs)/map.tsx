@@ -6,10 +6,9 @@ import { Screen } from '@/components/Screen';
 import { useMemoriesStore } from '@/store/memoriesStore';
 
 export default function MapScreen() {
-  const { memories, isHydrated } = useMemoriesStore((state) => ({
-    memories: state.memories,
-    isHydrated: state.isHydrated,
-  }));
+  const memories = useMemoriesStore((state) => state.memories);
+  const isHydrated = useMemoriesStore((state) => state.isHydrated);
+
   const previewMemories = memories.slice(0, 3);
 
   return (
@@ -20,11 +19,13 @@ export default function MapScreen() {
           Visualize your memories on the map. Map rendering is coming soon.
         </Text>
       </View>
+
       <Link href="/(modals)/memory-editor" asChild>
         <Pressable style={styles.button}>
           <Text style={styles.buttonText}>Create Memory</Text>
         </Pressable>
       </Link>
+
       <View style={styles.summaryCard}>
         <Text style={styles.summaryTitle}>Loaded memories</Text>
         {!isHydrated ? (

@@ -6,10 +6,8 @@ import { Screen } from '@/components/Screen';
 import { useMemoriesStore } from '@/store/memoriesStore';
 
 export default function TimelineScreen() {
-  const { memories, isHydrated } = useMemoriesStore((state) => ({
-    memories: state.memories,
-    isHydrated: state.isHydrated,
-  }));
+  const memories = useMemoriesStore((state) => state.memories);
+  const isHydrated = useMemoriesStore((state) => state.isHydrated);
 
   return (
     <Screen>
@@ -17,6 +15,7 @@ export default function TimelineScreen() {
         <Text style={styles.title}>Timeline</Text>
         <Text style={styles.description}>Review your memories in chronological order.</Text>
       </View>
+
       {!isHydrated ? (
         <Text style={styles.muted}>Loading memories...</Text>
       ) : memories.length === 0 ? (
