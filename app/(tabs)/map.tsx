@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import MapView, { LongPressEvent, Marker, Region } from 'react-native-maps';
 
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { Screen } from '@/components/Screen';
 import { colors, radius, spacing, text as textTokens } from '@/components/ui/tokens';
 import { useMemoriesStore } from '@/store/memoriesStore';
@@ -58,16 +59,6 @@ export default function MapScreen() {
 
   return (
     <Screen>
-      <View style={styles.header}>
-        <Text style={styles.title}>Map</Text>
-        <Text style={styles.subtitle}>Long-press to add a memory</Text>
-        <View style={styles.actions}>
-          <Button title="Search pins" variant="secondary" size="sm" onPress={handleOpenSearch} />
-        </View>
-      </View>
-
-      {!isHydrated ? <Text style={styles.loading}>Loading memories...</Text> : null}
-
       <View style={styles.mapContainer}>
         <MapView style={styles.map} initialRegion={initialRegion} onLongPress={handleLongPress}>
           {isHydrated &&
@@ -80,13 +71,60 @@ export default function MapScreen() {
               />
             ))}
         </MapView>
+
+        <View pointerEvents="box-none" style={styles.overlayTop}>
+          <Card style={styles.overlayCard}>
+            <View style={styles.overlayHeader}>
+              <View style={styles.overlayText}>
+                <Text style={styles.title}>Map</Text>
+                <Text style={styles.subtitle}>Long-press anywhere to drop a memory.</Text>
+              </View>
+              <Button title="Search pins" variant="secondary" size="sm" onPress={handleOpenSearch} />
+            </View>
+          </Card>
+          {!isHydrated ? (
+            <Card style={styles.statusCard}>
+              <Text style={styles.loading}>Loading memories...</Text>
+            </Card>
+          ) : null}
+        </View>
       </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
+  mapContainer: {
+    flex: 1,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    position: 'relative',
+  },
+  map: {
+    flex: 1,
+  },
+  overlayTop: {
+    position: 'absolute',
+    top: spacing.lg,
+    left: spacing.lg,
+    right: spacing.lg,
+    gap: spacing.sm,
+  },
+  overlayCard: {
+    padding: spacing.md,
+  },
+  overlayHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: radius.lg,
+    gap: spacing.md,
+  },
+  overlayText: {
+    flex: 1,
     gap: spacing.xs,
   },
   title: {
@@ -97,22 +135,11 @@ const styles = StyleSheet.create({
     ...textTokens.caption,
     color: colors.mutedText,
   },
-  actions: {
-    flexDirection: 'row',
+  statusCard: {
+    padding: spacing.md,
   },
   loading: {
     ...textTokens.caption,
     color: colors.mutedText,
-  },
-  mapContainer: {
-    flex: 1,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-    backgroundColor: colors.surface,
-  },
-  map: {
-    flex: 1,
   },
 });
