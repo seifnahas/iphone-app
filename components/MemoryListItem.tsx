@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing, text as textTokens } from './ui/tokens';
@@ -10,7 +10,16 @@ type MemoryListItemProps = {
   testID?: string;
 };
 
+function formatHappenedAt(value: string | undefined) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
 export function MemoryListItem({ memory, onPress, testID }: MemoryListItemProps) {
+  const formattedHappenedAt = useMemo(() => formatHappenedAt(memory.happenedAt), [memory.happenedAt]);
+
   return (
     <Pressable
       onPress={onPress}
@@ -18,23 +27,43 @@ export function MemoryListItem({ memory, onPress, testID }: MemoryListItemProps)
       accessibilityRole="button"
       testID={testID}
     >
-      <View style={styles.headerRow}>
-        <Text style={styles.title}>{memory.title || 'Untitled'}</Text>
-        {memory.song ? <Text style={styles.badge}>Song</Text> : null}
+      <View style={styles.cardSurface}>
+        <View style={styles.headerRow}>
+          <Text style={styles.title} numberOfLines={1}>
+            {memory.title || 'Untitled'}
+          </Text>
+          {memory.song ? (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>Song</Text>
+            </View>
+          ) : null}
+        </View>
+
+        <View style={styles.metaRow}>
+          {formattedHappenedAt ? <Text style={styles.meta}>{formattedHappenedAt}</Text> : null}
+          {memory.placeLabel ? <Text style={styles.meta}>{memory.placeLabel}</Text> : null}
+        </View>
       </View>
-      <Text style={styles.meta}>{memory.happenedAt}</Text>
-      {memory.placeLabel ? <Text style={styles.place}>{memory.placeLabel}</Text> : null}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
   },
   pressed: {
-    opacity: 0.9,
+    opacity: 0.94,
+  },
+  cardSurface: {
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
   },
   headerRow: {
     flexDirection: 'row',
@@ -48,20 +77,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   badge: {
-    ...textTokens.caption,
-    color: colors.primary,
     backgroundColor: '#e8f1ff',
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
-    borderRadius: radius.sm,
+    borderRadius: radius.md,
+  },
+  badgeText: {
+    ...textTokens.caption,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  metaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
   },
   meta: {
     ...textTokens.caption,
     color: colors.mutedText,
-  },
-  place: {
-    ...textTokens.caption,
-    color: colors.text,
   },
 });
 

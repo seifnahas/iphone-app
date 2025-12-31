@@ -88,14 +88,19 @@ export function MemorySearchControls({
 const styles = StyleSheet.create({
   container: {
     gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    padding: spacing.md,
   },
   searchInput: {
     ...textTokens.body,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: radius.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     color: colors.text,
   },
@@ -117,13 +122,16 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     borderWidth: 1,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   pillActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: '#e8f1ff',
     borderColor: colors.primary,
   },
   pillInactive: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderColor: colors.border,
   },
   pillPressed: {
@@ -133,7 +141,8 @@ const styles = StyleSheet.create({
     ...textTokens.body,
   },
   pillTextActive: {
-    color: '#ffffff',
+    color: colors.primary,
+    fontWeight: '700',
   },
   pillTextInactive: {
     color: colors.text,
