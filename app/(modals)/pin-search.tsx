@@ -5,11 +5,12 @@ import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { MemoryListItem } from '@/components/MemoryListItem';
 import { MemorySearchControls } from '@/components/MemorySearchControls';
 import { Screen } from '@/components/Screen';
+import { Button } from '@/components/ui/Button';
 import { colors, spacing, text as textTokens } from '@/components/ui/tokens';
 import { filterAndSortMemories, MemorySongFilter, MemorySortOrder } from '@/lib/memorySearch';
 import { useMemoriesStore } from '@/store/memoriesStore';
 
-export default function TimelineScreen() {
+export default function PinSearchModal() {
   const router = useRouter();
   const memories = useMemoriesStore((state) => state.memories);
   const isHydrated = useMemoriesStore((state) => state.isHydrated);
@@ -34,10 +35,16 @@ export default function TimelineScreen() {
     setSort('newest');
   };
 
-  const listHeader = (
+  const header = (
     <View style={styles.header}>
-      <Text style={styles.title}>Timeline</Text>
-      <Text style={styles.description}>Review your memories in chronological order.</Text>
+      <View style={styles.headerRow}>
+        <View style={styles.headerText}>
+          <Text style={styles.title}>Search pins</Text>
+          <Text style={styles.description}>Filter and sort your map memories.</Text>
+        </View>
+        <Button title="Close" variant="secondary" size="sm" onPress={() => router.back()} />
+      </View>
+
       <MemorySearchControls
         query={query}
         filterHasSong={filterHasSong}
@@ -55,13 +62,13 @@ export default function TimelineScreen() {
     }
 
     if (memories.length === 0) {
-      return <Text style={styles.muted}>No memories yet. Create one to see it here.</Text>;
+      return <Text style={styles.muted}>No memories yet. Add one from the map.</Text>;
     }
 
     return (
       <View style={styles.emptyState}>
         <Text style={styles.title}>No matches</Text>
-        <Text style={styles.description}>Try adjusting your search or filters.</Text>
+        <Text style={styles.description}>Try updating your search or filters.</Text>
         <Text style={styles.linkButton} onPress={handleClearFilters}>
           Clear filters
         </Text>
@@ -74,29 +81,32 @@ export default function TimelineScreen() {
       <FlatList
         data={isHydrated ? searchResults : []}
         keyExtractor={(item) => item.id}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
         renderItem={({ item }) => (
           <MemoryListItem memory={item} onPress={() => router.push(`/memory/${item.id}`)} />
         )}
-        ListHeaderComponent={listHeader}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ListHeaderComponent={header}
         ListEmptyComponent={renderEmptyState}
         contentContainerStyle={styles.listContent}
-        style={styles.list}
       />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  list: {
-    flex: 1,
-  },
-  listContent: {
-    paddingBottom: spacing.lg,
-    gap: spacing.md,
-  },
   header: {
+    gap: spacing.md,
+    paddingBottom: spacing.md,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: spacing.sm,
+  },
+  headerText: {
+    flex: 1,
+    gap: spacing.xs,
   },
   title: {
     ...textTokens.title,
@@ -109,6 +119,10 @@ const styles = StyleSheet.create({
   muted: {
     ...textTokens.body,
     color: colors.mutedText,
+  },
+  listContent: {
+    padding: spacing.lg,
+    gap: spacing.md,
   },
   separator: {
     height: 1,

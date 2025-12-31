@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import MapView, { LongPressEvent, Marker, Region } from 'react-native-maps';
 
+import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/Screen';
 import { colors, radius, spacing, text as textTokens } from '@/components/ui/tokens';
 import { useMemoriesStore } from '@/store/memoriesStore';
@@ -51,11 +52,18 @@ export default function MapScreen() {
     });
   };
 
+  const handleOpenSearch = () => {
+    router.push('/(modals)/pin-search');
+  };
+
   return (
     <Screen>
       <View style={styles.header}>
         <Text style={styles.title}>Map</Text>
         <Text style={styles.subtitle}>Long-press to add a memory</Text>
+        <View style={styles.actions}>
+          <Button title="Search pins" variant="secondary" size="sm" onPress={handleOpenSearch} />
+        </View>
       </View>
 
       {!isHydrated ? <Text style={styles.loading}>Loading memories...</Text> : null}
@@ -88,6 +96,9 @@ const styles = StyleSheet.create({
   subtitle: {
     ...textTokens.caption,
     color: colors.mutedText,
+  },
+  actions: {
+    flexDirection: 'row',
   },
   loading: {
     ...textTokens.caption,
