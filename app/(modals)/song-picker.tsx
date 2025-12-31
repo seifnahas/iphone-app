@@ -13,6 +13,7 @@ import {
 import { Screen } from '@/components/Screen';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ModalHeader } from '@/components/ui/ModalHeader';
 import { TextField } from '@/components/ui/TextField';
 import { colors, radius, spacing, text as textTokens } from '@/components/ui/tokens';
 import { beginAuth } from '@/lib/spotify/spotifyAuth';
@@ -32,6 +33,7 @@ export default function SongPickerModal() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const debouncedQuery = useDebouncedValue(query, 400);
+  const handleClose = () => router.back();
 
   useEffect(() => {
     const runSearch = async () => {
@@ -108,7 +110,10 @@ export default function SongPickerModal() {
         keyExtractor={(item) => item.spotifyTrackId}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         renderItem={({ item }) => (
-          <Pressable onPress={() => handleSelect(item)} style={styles.row}>
+          <Pressable
+            onPress={() => handleSelect(item)}
+            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+          >
             <Image
               source={
                 item.albumArtUrl ? { uri: item.albumArtUrl } : require('@/assets/images/icon.png')
@@ -130,10 +135,11 @@ export default function SongPickerModal() {
         )}
         ListHeaderComponent={
           <View style={styles.headerContainer}>
-            <View style={styles.header}>
-              <Text style={styles.title}>Song Picker</Text>
-              <Text style={styles.subtitle}>Search Spotify to attach a preview to your memory.</Text>
-            </View>
+            <ModalHeader
+              title="Song Picker"
+              subtitle="Search Spotify to attach a preview to your memory."
+              onClose={handleClose}
+            />
 
             <Card style={styles.card}>
               <TextField
@@ -156,6 +162,7 @@ export default function SongPickerModal() {
         }
         ListEmptyComponent={renderListEmpty}
         contentContainerStyle={styles.listContent}
+        keyboardShouldPersistTaps="handled"
       />
     </Screen>
   );
@@ -173,20 +180,8 @@ function useDebouncedValue<T>(value: T, delay: number) {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    gap: spacing.xs,
-    marginBottom: spacing.md,
-  },
   headerContainer: {
     gap: spacing.md,
-  },
-  title: {
-    ...textTokens.title,
-    color: colors.text,
-  },
-  subtitle: {
-    ...textTokens.body,
-    color: colors.mutedText,
   },
   card: {
     gap: spacing.sm,
@@ -208,15 +203,22 @@ const styles = StyleSheet.create({
   listContent: {
     padding: spacing.lg,
     gap: spacing.md,
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
   },
   row: {
     flexDirection: 'row',
     gap: spacing.md,
     alignItems: 'center',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.xs,
-    borderRadius: radius.md,
+    padding: spacing.md,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  rowPressed: {
+    backgroundColor: '#f1f5f9',
   },
   rowText: {
     flex: 1,

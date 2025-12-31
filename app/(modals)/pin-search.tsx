@@ -6,6 +6,8 @@ import { MemoryListItem } from '@/components/MemoryListItem';
 import { MemorySearchControls } from '@/components/MemorySearchControls';
 import { Screen } from '@/components/Screen';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { ModalHeader } from '@/components/ui/ModalHeader';
 import { colors, spacing, text as textTokens } from '@/components/ui/tokens';
 import { filterAndSortMemories, MemorySongFilter, MemorySortOrder } from '@/lib/memorySearch';
 import { useMemoriesStore } from '@/store/memoriesStore';
@@ -37,42 +39,49 @@ export default function PinSearchModal() {
 
   const header = (
     <View style={styles.header}>
-      <View style={styles.headerRow}>
-        <View style={styles.headerText}>
-          <Text style={styles.title}>Search pins</Text>
-          <Text style={styles.description}>Filter and sort your map memories.</Text>
-        </View>
-        <Button title="Close" variant="secondary" size="sm" onPress={() => router.back()} />
-      </View>
-
-      <MemorySearchControls
-        query={query}
-        filterHasSong={filterHasSong}
-        sort={sort}
-        onQueryChange={setQuery}
-        onFilterChange={setFilterHasSong}
-        onSortChange={setSort}
+      <ModalHeader
+        title="Search pins"
+        subtitle="Filter and sort your map memories."
+        onClose={() => router.back()}
       />
+
+      <Card style={styles.filterCard}>
+        <MemorySearchControls
+          query={query}
+          filterHasSong={filterHasSong}
+          sort={sort}
+          onQueryChange={setQuery}
+          onFilterChange={setFilterHasSong}
+          onSortChange={setSort}
+        />
+        <Button title="Clear filters" variant="secondary" size="sm" onPress={handleClearFilters} />
+      </Card>
     </View>
   );
 
   const renderEmptyState = () => {
     if (!isHydrated) {
-      return <Text style={styles.muted}>Loading memories...</Text>;
+      return (
+        <Card style={styles.emptyCard}>
+          <Text style={styles.muted}>Loading memories...</Text>
+        </Card>
+      );
     }
 
     if (memories.length === 0) {
-      return <Text style={styles.muted}>No memories yet. Add one from the map.</Text>;
+      return (
+        <Card style={styles.emptyCard}>
+          <Text style={styles.muted}>No memories yet. Add one from the map.</Text>
+        </Card>
+      );
     }
 
     return (
-      <View style={styles.emptyState}>
+      <Card style={styles.emptyCard}>
         <Text style={styles.title}>No matches</Text>
         <Text style={styles.description}>Try updating your search or filters.</Text>
-        <Text style={styles.linkButton} onPress={handleClearFilters}>
-          Clear filters
-        </Text>
-      </View>
+        <Button title="Reset filters" variant="secondary" size="sm" onPress={handleClearFilters} />
+      </Card>
     );
   };
 
@@ -96,17 +105,7 @@ export default function PinSearchModal() {
 const styles = StyleSheet.create({
   header: {
     gap: spacing.md,
-    paddingBottom: spacing.md,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  headerText: {
-    flex: 1,
-    gap: spacing.xs,
+    paddingBottom: spacing.sm,
   },
   title: {
     ...textTokens.title,
@@ -123,19 +122,17 @@ const styles = StyleSheet.create({
   listContent: {
     padding: spacing.lg,
     gap: spacing.md,
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
   },
   separator: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: spacing.sm,
+    height: spacing.sm,
   },
-  emptyState: {
-    gap: spacing.xs,
-    paddingVertical: spacing.md,
+  filterCard: {
+    gap: spacing.md,
   },
-  linkButton: {
-    ...textTokens.body,
-    color: colors.primary,
-    fontWeight: '600',
+  emptyCard: {
+    gap: spacing.sm,
   },
 });

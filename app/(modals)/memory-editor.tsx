@@ -2,6 +2,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -12,8 +13,9 @@ import {
 import { Screen } from '@/components/Screen';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ModalHeader } from '@/components/ui/ModalHeader';
 import { TextField } from '@/components/ui/TextField';
-import { colors, spacing, text as textTokens } from '@/components/ui/tokens';
+import { colors, radius, spacing, text as textTokens } from '@/components/ui/tokens';
 import * as logger from '@/lib/logger';
 import { getMemoryById } from '@/lib/db/memories';
 import { generateId } from '@/lib/id';
@@ -215,17 +217,22 @@ export default function MemoryEditorModal() {
     : 'Fill in the basics to add a memory to your timeline.';
 
   return (
-    <Screen scroll>
+    <Screen scroll contentStyle={styles.screenContent}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.flex}
       >
         <View style={styles.content}>
-          <View style={styles.header}>
-            <Text style={styles.title}>{isEditing ? 'Edit Memory' : 'New Memory'}</Text>
-            <Text style={styles.subtitle}>{subtitle}</Text>
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          </View>
+          <ModalHeader
+            title={isEditing ? 'Edit Memory' : 'New Memory'}
+            subtitle={subtitle}
+            onClose={handleCancel}
+          />
+          {error ? (
+            <Card style={styles.inlineCard}>
+              <Text style={styles.errorText}>{error}</Text>
+            </Card>
+          ) : null}
 
           <Card style={styles.card}>
             <View style={styles.fieldStack}>
@@ -262,37 +269,50 @@ export default function MemoryEditorModal() {
                 multiline
                 testID="memory-body"
               />
-              <View style={styles.songSection}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Song</Text>
-                  {song ? (
-                    <View style={styles.songActions}>
-                      <Button
-                        title="Change"
-                        size="sm"
-                        variant="secondary"
-                        onPress={handleOpenSongPicker}
-                        testID="change-song"
-                      />
-                      <Button
-                        title="Remove"
-                        size="sm"
-                        variant="destructive"
-                        onPress={handleRemoveSong}
-                        testID="remove-song"
-                      />
-                    </View>
-                  ) : (
-                    <Button
-                      title="Add song"
-                      size="sm"
-                      variant="primary"
-                      onPress={handleOpenSongPicker}
-                      testID="add-song"
-                    />
-                  )}
-                </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.songSection}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Song</Text>
                 {song ? (
+                  <View style={styles.songActions}>
+                    <Button
+                      title="Change"
+                      size="sm"
+                      variant="secondary"
+                      onPress={handleOpenSongPicker}
+                      testID="change-song"
+                    />
+                    <Button
+                      title="Remove"
+                      size="sm"
+                      variant="destructive"
+                      onPress={handleRemoveSong}
+                      testID="remove-song"
+                    />
+                  </View>
+                ) : (
+                  <Button
+                    title="Add song"
+                    size="sm"
+                    variant="primary"
+                    onPress={handleOpenSongPicker}
+                    testID="add-song"
+                  />
+                )}
+              </View>
+              {song ? (
+                <View style={styles.songPreview}>
+                  <Image
+                    source={
+                      song.albumArtUrl
+                        ? { uri: song.albumArtUrl }
+                        : require('@/assets/images/icon.png')
+                    }
+                    style={styles.songArt}
+                  />
                   <View style={styles.songSummary}>
                     <Text style={styles.songTitle}>{song.title}</Text>
                     <Text style={styles.songArtist}>{song.artist}</Text>
@@ -300,30 +320,34 @@ export default function MemoryEditorModal() {
                       <Text style={styles.previewWarning}>Preview not available.</Text>
                     ) : null}
                   </View>
-                ) : (
-                  <Text style={styles.description}>Attach a Spotify song preview to this memory.</Text>
-                )}
-              </View>
+                </View>
+              ) : (
+                <Text style={styles.description}>
+                  Attach a Spotify song preview to this memory.
+                </Text>
+              )}
             </View>
           </Card>
 
-          <View style={styles.actions}>
-            <Button
-              title="Cancel"
-              onPress={handleCancel}
-              variant="secondary"
-              disabled={isSaving}
-              style={styles.actionButton}
-            />
-            <Button
-              title={isSaving ? 'Saving...' : 'Save'}
-              onPress={handleSave}
-              variant="primary"
-              loading={isSaving}
-              disabled={isSaveDisabled}
-              style={styles.actionButton}
-            />
-          </View>
+          <Card style={styles.actionsCard}>
+            <View style={styles.actions}>
+              <Button
+                title="Cancel"
+                onPress={handleCancel}
+                variant="secondary"
+                disabled={isSaving}
+                style={styles.actionButton}
+              />
+              <Button
+                title={isSaving ? 'Saving...' : 'Save'}
+                onPress={handleSave}
+                variant="primary"
+                loading={isSaving}
+                disabled={isSaveDisabled}
+                style={styles.actionButton}
+              />
+            </View>
+          </Card>
         </View>
       </KeyboardAvoidingView>
     </Screen>
@@ -334,30 +358,33 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
+  screenContent: {
+    gap: spacing.lg,
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
+  },
   content: {
     flex: 1,
-    gap: spacing.lg,
-  },
-  header: {
-    gap: spacing.xs,
-  },
-  title: {
-    ...textTokens.title,
-    color: colors.text,
-  },
-  subtitle: {
-    ...textTokens.body,
-    color: colors.mutedText,
+    gap: spacing.md,
   },
   errorText: {
-    ...textTokens.caption,
+    ...textTokens.body,
     color: colors.destructive,
   },
+  inlineCard: {
+    gap: spacing.xs,
+  },
   card: {
-    gap: spacing.md,
+    gap: spacing.lg,
   },
   fieldStack: {
     gap: spacing.md,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginHorizontal: -spacing.md,
   },
   actions: {
     flexDirection: 'row',
@@ -367,11 +394,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   description: {
-    ...textTokens.body,
+    ...textTokens.caption,
     color: colors.mutedText,
   },
   songSection: {
     gap: spacing.sm,
+    backgroundColor: colors.background,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -388,8 +420,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
   },
+  songPreview: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    alignItems: 'center',
+  },
+  songArt: {
+    width: 64,
+    height: 64,
+    borderRadius: radius.md,
+    backgroundColor: colors.border,
+  },
   songSummary: {
     gap: spacing.xs,
+    flex: 1,
   },
   songTitle: {
     ...textTokens.body,
@@ -403,5 +447,8 @@ const styles = StyleSheet.create({
   previewWarning: {
     ...textTokens.caption,
     color: colors.destructive,
+  },
+  actionsCard: {
+    gap: spacing.sm,
   },
 });
