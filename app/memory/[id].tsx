@@ -1,5 +1,5 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Image, Linking, StyleSheet, Text, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
@@ -22,6 +22,13 @@ export default function MemoryDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const formattedHappenedAt = useMemo(() => {
+    if (!memory?.happenedAt) return null;
+    const parsed = new Date(memory.happenedAt);
+    if (Number.isNaN(parsed.getTime())) return memory.happenedAt;
+    return parsed.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  }, [memory?.happenedAt]);
 
   useFocusEffect(
     useCallback(() => {
@@ -127,43 +134,50 @@ export default function MemoryDetailScreen() {
   };
 
   return (
-    <Screen scroll>
-      <View style={styles.header}>
-        <Text style={styles.title}>Memory Detail</Text>
-        <Text style={styles.description}>Viewing memory {memoryId}.</Text>
+    <Screen scroll contentStyle={styles.screenContent}>
+      <View style={styles.pageHeader}>
+        <Text style={styles.overline}>Pin detail</Text>
+        <Text style={styles.title}>{memory?.title || 'Memory detail'}</Text>
+        <Text style={styles.description}>A calm view of what you pinned at this spot.</Text>
       </View>
       {isLoading ? (
-        <Card>
-          <Text style={styles.description}>Loading...</Text>
+        <Card style={styles.stateCard}>
+          <Text style={styles.description}>Loading memory...</Text>
         </Card>
       ) : error ? (
-        <Card>
+        <Card style={styles.stateCard}>
           <Text style={[styles.description, styles.errorText]}>{error}</Text>
         </Card>
       ) : memory ? (
         <>
-          <Card>
+          <Card style={styles.heroCard}>
             <View style={styles.cardHeader}>
-              <Text style={styles.memoryTitle}>{memory.title || 'Untitled'}</Text>
+              <Text style={styles.memoryTitle}>{memory.title || 'Untitled memory'}</Text>
               <View style={styles.metaRow}>
-                <Text style={styles.metaText}>{memory.happenedAt}</Text>
-                {memory.placeLabel ? <Text style={styles.metaText}>{memory.placeLabel}</Text> : null}
+                <View style={styles.metaPill}>
+                  <Text style={styles.metaLabel}>When</Text>
+                  <Text style={styles.metaValue}>{formattedHappenedAt ?? 'Date unavailable'}</Text>
+                </View>
+                <View style={styles.metaPill}>
+                  <Text style={styles.metaLabel}>Location</Text>
+                  <Text style={styles.metaValue}>
+                    {memory.placeLabel ?? `${memory.latitude.toFixed(2)}, ${memory.longitude.toFixed(2)}`}
+                  </Text>
+                </View>
               </View>
             </View>
           </Card>
 
-          <Card>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Body</Text>
-            </View>
+          <Card style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Notes</Text>
             <Text style={styles.bodyText}>{memory.body?.trim() || 'No notes yet.'}</Text>
           </Card>
 
           {memory.song ? (
-            <Card>
+            <Card style={styles.sectionCard}>
               <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionTitle}>Song</Text>
-                <Button title="Edit" onPress={handleEdit} size="sm" variant="secondary" />
+                <Text style={styles.sectionTitle}>Attached song</Text>
+                <Button title="Edit song" onPress={handleEdit} size="sm" variant="secondary" />
               </View>
               <View style={styles.songContent}>
                 <Image
@@ -181,23 +195,24 @@ export default function MemoryDetailScreen() {
                   <Text style={styles.songArtist} numberOfLines={1}>
                     {memory.song.artist}
                   </Text>
+                  {!memory.song.previewUrl ? (
+                    <Text style={styles.previewWarning}>Preview not available.</Text>
+                  ) : null}
                 </View>
               </View>
               <View style={styles.songActions}>
                 <Button
                   title="Play in Spotify"
                   onPress={() => handlePlayInSpotify(memory.song?.spotifyTrackId)}
-                  size="sm"
+                  variant="secondary"
+                  size="md"
                 />
-                {/* TODO: Add copy link action when clipboard support is available. */}
               </View>
             </Card>
           ) : null}
 
-          <Card>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Location</Text>
-            </View>
+          <Card style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Location</Text>
             <View style={styles.detailList}>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Latitude</Text>
@@ -210,27 +225,33 @@ export default function MemoryDetailScreen() {
             </View>
           </Card>
 
-          <Card>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Media</Text>
-            </View>
+          <Card style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Media</Text>
             <Text style={styles.bodyText}>{mediaCount} item(s)</Text>
           </Card>
 
-          <View style={styles.actions}>
-            <Button title="Edit" variant="primary" onPress={handleEdit} style={styles.actionButton} />
-            <Button
-              title={isDeleting ? 'Deleting...' : 'Delete'}
-              variant="destructive"
-              onPress={confirmDelete}
-              disabled={isDeleting}
-              loading={isDeleting}
-              style={styles.actionButton}
-            />
-          </View>
+          <Card style={styles.actionsCard}>
+            <Text style={styles.sectionTitle}>Actions</Text>
+            <View style={styles.actions}>
+              <Button
+                title="Edit memory"
+                variant="primary"
+                onPress={handleEdit}
+                style={styles.actionButton}
+              />
+              <Button
+                title={isDeleting ? 'Deleting...' : 'Delete'}
+                variant="destructive"
+                onPress={confirmDelete}
+                disabled={isDeleting}
+                loading={isDeleting}
+                style={styles.actionButton}
+              />
+            </View>
+          </Card>
         </>
       ) : (
-        <Card>
+        <Card style={styles.stateCard}>
           <Text style={styles.description}>Memory not found.</Text>
         </Card>
       )}
@@ -239,8 +260,20 @@ export default function MemoryDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
+  screenContent: {
+    gap: spacing.lg,
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
+  },
+  pageHeader: {
     gap: spacing.xs,
+  },
+  overline: {
+    ...textTokens.caption,
+    color: colors.mutedText,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   title: {
     ...textTokens.title,
@@ -250,8 +283,14 @@ const styles = StyleSheet.create({
     ...textTokens.caption,
     color: colors.mutedText,
   },
-  cardHeader: {
+  stateCard: {
     gap: spacing.xs,
+  },
+  cardHeader: {
+    gap: spacing.sm,
+  },
+  heroCard: {
+    gap: spacing.sm,
   },
   memoryTitle: {
     ...textTokens.title,
@@ -262,18 +301,28 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
-  metaText: {
+  metaPill: {
+    backgroundColor: colors.background,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    gap: 2,
+    minWidth: 140,
+  },
+  metaLabel: {
     ...textTokens.caption,
     color: colors.mutedText,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
-  sectionHeader: {
-    marginBottom: spacing.sm,
+  metaValue: {
+    ...textTokens.body,
+    color: colors.text,
+    fontWeight: '600',
   },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
+  sectionCard: {
     gap: spacing.sm,
   },
   sectionTitle: {
@@ -302,16 +351,14 @@ const styles = StyleSheet.create({
     ...textTokens.body,
     color: colors.text,
   },
-  actions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  actionButton: {
-    flex: 1,
-  },
   errorText: {
     color: colors.destructive,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
   },
   songContent: {
     flexDirection: 'row',
@@ -320,14 +367,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   songArt: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.sm,
+    width: 72,
+    height: 72,
+    borderRadius: radius.md,
     backgroundColor: colors.border,
   },
   songMeta: {
     flex: 1,
-    gap: 2,
+    gap: 4,
   },
   songTitle: {
     ...textTokens.body,
@@ -339,7 +386,22 @@ const styles = StyleSheet.create({
     color: colors.mutedText,
   },
   songActions: {
+    marginTop: spacing.sm,
     flexDirection: 'row',
     gap: spacing.sm,
+  },
+  previewWarning: {
+    ...textTokens.caption,
+    color: colors.destructive,
+  },
+  actionsCard: {
+    gap: spacing.sm,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  actionButton: {
+    flex: 1,
   },
 });
