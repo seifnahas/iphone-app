@@ -1,22 +1,33 @@
 import * as logger from '@/lib/logger';
+import { parseNoteBlocks, serializeNoteBlocks } from '@/lib/noteBlocks';
 import { Memory } from '@/types/models';
 
 import { openDb } from './index';
 
-type MemoryRow = Omit<Memory, 'song'> & {
+type MemoryRow = Omit<Memory, 'song' | 'noteBlocks'> & {
   songSpotifyTrackId?: string | null;
   songTitle?: string | null;
   songArtist?: string | null;
   songAlbumArtUrl?: string | null;
   songPreviewUrl?: string | null;
+  noteBlocks?: string | null;
 };
 
 function mapRowToMemory(row: MemoryRow): Memory {
-  const { songSpotifyTrackId, songTitle, songArtist, songAlbumArtUrl, songPreviewUrl, ...rest } = row;
+  const {
+    songSpotifyTrackId,
+    songTitle,
+    songArtist,
+    songAlbumArtUrl,
+    songPreviewUrl,
+    noteBlocks,
+    ...rest
+  } = row;
 
   const hasSong = songSpotifyTrackId && songTitle && songArtist;
   return {
     ...rest,
+    noteBlocks: parseNoteBlocks(noteBlocks),
     song: hasSong
       ? {
           spotifyTrackId: songSpotifyTrackId,
@@ -56,11 +67,12 @@ export async function upsertMemory(memory: Memory): Promise<void> {
     const db = await openDb();
     await db.runAsync(
       `
-      INSERT INTO memories (id, title, body, createdAt, happenedAt, latitude, longitude, placeLabel, updatedAt, songSpotifyTrackId, songTitle, songArtist, songAlbumArtUrl, songPreviewUrl)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO memories (id, title, body, noteBlocks, createdAt, happenedAt, latitude, longitude, placeLabel, updatedAt, songSpotifyTrackId, songTitle, songArtist, songAlbumArtUrl, songPreviewUrl)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         title = excluded.title,
         body = excluded.body,
+        noteBlocks = excluded.noteBlocks,
         createdAt = excluded.createdAt,
         happenedAt = excluded.happenedAt,
         latitude = excluded.latitude,
@@ -77,6 +89,7 @@ export async function upsertMemory(memory: Memory): Promise<void> {
         memory.id,
         memory.title ?? null,
         memory.body ?? null,
+        serializeNoteBlocks(memory.noteBlocks),
         memory.createdAt,
         memory.happenedAt,
         memory.latitude,

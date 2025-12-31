@@ -2,11 +2,13 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Image, Linking, StyleSheet, Text, View } from 'react-native';
 
+import { NoteBlocksRenderer } from '@/components/notes/NoteBlocksRenderer';
 import { Screen } from '@/components/Screen';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { getMemoryById } from '@/lib/db/memories';
 import { listMediaByMemoryId } from '@/lib/db/media';
+import { normalizeNoteBlocks } from '@/lib/noteBlocks';
 import * as logger from '@/lib/logger';
 import { colors, radius, spacing, text as textTokens } from '@/components/ui/tokens';
 import { useMemoriesStore } from '@/store/memoriesStore';
@@ -29,6 +31,19 @@ export default function MemoryDetailScreen() {
     if (Number.isNaN(parsed.getTime())) return memory.happenedAt;
     return parsed.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
   }, [memory?.happenedAt]);
+
+  const noteBlocks = useMemo(
+    () =>
+      memory
+        ? normalizeNoteBlocks({
+            id: memory.id,
+            noteBlocks: memory.noteBlocks,
+            body: memory.body,
+          })
+        : [],
+    [memory],
+  );
+  const hasNotes = noteBlocks.length > 0;
 
   useFocusEffect(
     useCallback(() => {
@@ -168,10 +183,12 @@ export default function MemoryDetailScreen() {
             </View>
           </Card>
 
-          <Card style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Notes</Text>
-            <Text style={styles.bodyText}>{memory.body?.trim() || 'No notes yet.'}</Text>
-          </Card>
+          {hasNotes ? (
+            <Card style={styles.sectionCard}>
+              <Text style={styles.sectionTitle}>Notes</Text>
+              <NoteBlocksRenderer blocks={noteBlocks} />
+            </Card>
+          ) : null}
 
           {memory.song ? (
             <Card style={styles.sectionCard}>

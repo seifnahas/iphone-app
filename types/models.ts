@@ -1,3 +1,5 @@
+import { NoteBlock } from './notes';
+
 export interface SpotifyTrack {
   spotifyTrackId: string;
   title: string;
@@ -10,6 +12,7 @@ export interface Memory {
   id: string;
   title?: string;
   body?: string;
+  noteBlocks?: NoteBlock[];
   createdAt: string;
   happenedAt: string;
   latitude: number;

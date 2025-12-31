@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 
+import { NoteBlocksEditor } from '@/components/notes/NoteBlocksEditor';
 import { Screen } from '@/components/Screen';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -19,8 +20,10 @@ import { colors, radius, spacing, text as textTokens } from '@/components/ui/tok
 import * as logger from '@/lib/logger';
 import { getMemoryById } from '@/lib/db/memories';
 import { generateId } from '@/lib/id';
+import { normalizeNoteBlocks, sanitizeNoteBlocks } from '@/lib/noteBlocks';
 import { useMemoriesStore } from '@/store/memoriesStore';
 import { useSongSelectionStore } from '@/store/songSelectionStore';
+import { NoteBlock } from '@/types/notes';
 import { Memory, SpotifyTrack } from '@/types/models';
 
 type MemoryEditorParams = {
@@ -70,13 +73,14 @@ export default function MemoryEditorModal() {
 
   const [title, setTitle] = useState('');
   const [happenedAt, setHappenedAt] = useState(initialHappenedAt);
-  const [body, setBody] = useState('');
   const [placeLabel, setPlaceLabel] = useState('Pinned location'); // TODO: replace with reverse geocoded label
   const [existingMemory, setExistingMemory] = useState<Memory | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(isEditing);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [song, setSong] = useState<SpotifyTrack | undefined>(undefined);
+  const [noteBlocks, setNoteBlocks] = useState<NoteBlock[]>([]);
+  const [legacyBody, setLegacyBody] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!memoryId) return;
@@ -99,10 +103,17 @@ export default function MemoryEditorModal() {
 
         setExistingMemory(record);
         setTitle(record.title ?? '');
-        setBody(record.body ?? '');
         setHappenedAt(record.happenedAt);
         setPlaceLabel(record.placeLabel ?? '');
         setSong(record.song ?? undefined);
+        setNoteBlocks(
+          normalizeNoteBlocks({
+            id: record.id,
+            noteBlocks: record.noteBlocks,
+            body: record.body,
+          }),
+        );
+        setLegacyBody(record.body ?? undefined);
       } catch (loadError) {
         if (!isMounted) return;
         logger.error('Failed to load memory for editing', memoryId, loadError);
@@ -149,8 +160,6 @@ export default function MemoryEditorModal() {
     }
 
     const trimmedPlaceLabel = placeLabel.trim();
-    const trimmedBody = body.trim();
-
     if (!isTitleValid) {
       Alert.alert('Title required', 'Please add a title before saving.');
       return;
@@ -165,12 +174,15 @@ export default function MemoryEditorModal() {
     setError(null);
 
     const now = new Date().toISOString();
+    const cleanedBlocks = sanitizeNoteBlocks(noteBlocks);
+    const noteBlocksToPersist = cleanedBlocks.length ? cleanedBlocks : undefined;
 
     const memoryToSave: Memory = existingMemory
       ? {
           ...existingMemory,
           title: trimmedTitle,
-          body: trimmedBody || undefined,
+          body: existingMemory.body ?? legacyBody,
+          noteBlocks: noteBlocksToPersist,
           happenedAt: parsedDate.toISOString(),
           placeLabel: trimmedPlaceLabel || undefined,
           updatedAt: now,
@@ -179,7 +191,8 @@ export default function MemoryEditorModal() {
       : {
           id: generateId(),
           title: trimmedTitle,
-          body: trimmedBody || undefined,
+          body: legacyBody,
+          noteBlocks: noteBlocksToPersist,
           createdAt: now,
           happenedAt: parsedDate.toISOString(),
           latitude,
@@ -261,14 +274,15 @@ export default function MemoryEditorModal() {
                 placeholder="Pinned location"
                 testID="memory-place-label"
               />
-              <TextField
-                label="Body (optional)"
-                value={body}
-                onChangeText={setBody}
-                placeholder="Add a quick note"
-                multiline
-                testID="memory-body"
-              />
+              <View style={styles.notesSection}>
+                <View style={styles.notesHeader}>
+                  <Text style={styles.sectionTitle}>Notes</Text>
+                  <Text style={styles.description}>
+                    Add headings, paragraphs, or dividers to structure this memory.
+                  </Text>
+                </View>
+                <NoteBlocksEditor blocks={noteBlocks} onChange={setNoteBlocks} />
+              </View>
             </View>
 
             <View style={styles.divider} />
@@ -404,6 +418,17 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  notesSection: {
+    gap: spacing.sm,
+    backgroundColor: colors.background,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  notesHeader: {
+    gap: spacing.xs,
   },
   sectionHeader: {
     flexDirection: 'row',
