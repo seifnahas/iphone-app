@@ -6,7 +6,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 
@@ -17,6 +16,7 @@ import { Card } from '@/components/ui/Card';
 import { ModalHeader } from '@/components/ui/ModalHeader';
 import { TextField } from '@/components/ui/TextField';
 import { colors, radius, spacing, text as textTokens } from '@/components/ui/tokens';
+import { Text } from '@/components/ui/Text';
 import * as logger from '@/lib/logger';
 import { getMemoryById } from '@/lib/db/memories';
 import { generateId } from '@/lib/id';
@@ -295,14 +295,14 @@ export default function MemoryEditorModal() {
                     <Button
                       title="Change"
                       size="sm"
-                      variant="secondary"
+                      variant="ghost"
                       onPress={handleOpenSongPicker}
                       testID="change-song"
                     />
                     <Button
                       title="Remove"
                       size="sm"
-                      variant="destructive"
+                      variant="danger"
                       onPress={handleRemoveSong}
                       testID="remove-song"
                     />
@@ -348,7 +348,7 @@ export default function MemoryEditorModal() {
               <Button
                 title="Cancel"
                 onPress={handleCancel}
-                variant="secondary"
+                variant="ghost"
                 disabled={isSaving}
                 style={styles.actionButton}
               />
@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     ...textTokens.body,
-    color: colors.destructive,
+    color: colors.danger,
   },
   inlineCard: {
     gap: spacing.xs,
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
   },
   songSection: {
     gap: spacing.sm,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceMuted,
     borderRadius: radius.lg,
     padding: spacing.md,
     borderWidth: 1,
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
   },
   notesSection: {
     gap: spacing.sm,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceMuted,
     borderRadius: radius.lg,
     padding: spacing.md,
     borderWidth: 1,
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
   },
   previewWarning: {
     ...textTokens.caption,
-    color: colors.destructive,
+    color: colors.danger,
   },
   actionsCard: {
     gap: spacing.sm,

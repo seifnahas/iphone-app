@@ -1,7 +1,8 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { colors, spacing, text as textTokens } from '@/components/ui/tokens';
+import { colors, spacing } from '@/components/ui/tokens';
+import { Text } from '@/components/ui/Text';
 import { NoteBlock } from '@/types/notes';
 
 type NoteBlocksRendererProps = {
@@ -16,7 +17,7 @@ export function NoteBlocksRenderer({ blocks }: NoteBlocksRendererProps) {
       {blocks.map((block) => {
         if (block.type === 'heading') {
           return (
-            <Text key={block.id} style={styles.heading}>
+            <Text key={block.id} variant="subtitle" style={styles.heading}>
               {block.text}
             </Text>
           );
@@ -24,7 +25,7 @@ export function NoteBlocksRenderer({ blocks }: NoteBlocksRendererProps) {
 
         if (block.type === 'paragraph') {
           return (
-            <Text key={block.id} style={styles.paragraph}>
+            <Text key={block.id} variant="body" style={styles.paragraph}>
               {block.text}
             </Text>
           );
@@ -41,12 +42,9 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   heading: {
-    ...textTokens.title,
     color: colors.text,
-    fontWeight: '600',
   },
   paragraph: {
-    ...textTokens.body,
     color: colors.text,
     lineHeight: 22,
   },

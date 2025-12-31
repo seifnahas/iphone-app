@@ -9,10 +9,12 @@ interface ScreenProps {
   style?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
   scroll?: boolean;
+  padded?: boolean;
 }
 
-export function Screen({ children, style, contentStyle, scroll = false }: ScreenProps) {
-  const contentStyles = [styles.content, style, contentStyle];
+export function Screen({ children, style, contentStyle, scroll = false, padded = true }: ScreenProps) {
+  const paddingStyle = padded ? styles.padded : styles.unpadded;
+  const contentStyles = [styles.content, paddingStyle, style, contentStyle];
 
   if (scroll) {
     return (
@@ -51,7 +53,14 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
-    padding: spacing.lg,
     gap: spacing.md,
+  },
+  padded: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+  },
+  unpadded: {
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
 });

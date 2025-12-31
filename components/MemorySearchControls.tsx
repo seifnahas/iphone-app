@@ -1,8 +1,14 @@
+import Feather from '@expo/vector-icons/Feather';
 import React from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { MemorySongFilter, MemorySortOrder } from '@/lib/memorySearch';
-import { colors, radius, spacing, text as textTokens } from './ui/tokens';
+
+import { Chip } from './ui/Chip';
+import { Divider } from './ui/Divider';
+import { Input } from './ui/Input';
+import { Text } from './ui/Text';
+import { colors, spacing } from './ui/tokens';
 
 type MemorySearchControlsProps = {
   query: string;
@@ -12,30 +18,6 @@ type MemorySearchControlsProps = {
   onFilterChange: (value: MemorySongFilter) => void;
   onSortChange: (value: MemorySortOrder) => void;
 };
-
-type OptionPillProps = {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-};
-
-function OptionPill({ label, active, onPress }: OptionPillProps) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.pill,
-        active ? styles.pillActive : styles.pillInactive,
-        pressed && styles.pillPressed,
-      ]}
-      accessibilityRole="button"
-    >
-      <Text style={[styles.pillText, active ? styles.pillTextActive : styles.pillTextInactive]}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
 
 export function MemorySearchControls({
   query,
@@ -47,26 +29,30 @@ export function MemorySearchControls({
 }: MemorySearchControlsProps) {
   return (
     <View style={styles.container}>
-      <TextInput
+      <Input
         value={query}
         onChangeText={onQueryChange}
         placeholder="Search memories"
         placeholderTextColor={colors.mutedText}
         autoCapitalize="none"
-        style={styles.searchInput}
         testID="memory-search-input"
+        leadingIcon={<Feather name="search" size={18} color={colors.mutedText} />}
       />
 
+      <Divider />
+
       <View style={styles.row}>
-        <Text style={styles.label}>Song</Text>
-        <View style={styles.pillRow}>
-          <OptionPill label="All" active={filterHasSong === 'all'} onPress={() => onFilterChange('all')} />
-          <OptionPill
+        <Text variant="caption" muted>
+          Song attachment
+        </Text>
+        <View style={styles.chipRow}>
+          <Chip label="All" active={filterHasSong === 'all'} onPress={() => onFilterChange('all')} />
+          <Chip
             label="With song"
             active={filterHasSong === 'withSong'}
             onPress={() => onFilterChange('withSong')}
           />
-          <OptionPill
+          <Chip
             label="Without"
             active={filterHasSong === 'withoutSong'}
             onPress={() => onFilterChange('withoutSong')}
@@ -75,10 +61,12 @@ export function MemorySearchControls({
       </View>
 
       <View style={styles.row}>
-        <Text style={styles.label}>Sort</Text>
-        <View style={styles.pillRow}>
-          <OptionPill label="Newest" active={sort === 'newest'} onPress={() => onSortChange('newest')} />
-          <OptionPill label="Oldest" active={sort === 'oldest'} onPress={() => onSortChange('oldest')} />
+        <Text variant="caption" muted>
+          Sort order
+        </Text>
+        <View style={styles.chipRow}>
+          <Chip label="Newest" active={sort === 'newest'} onPress={() => onSortChange('newest')} />
+          <Chip label="Oldest" active={sort === 'oldest'} onPress={() => onSortChange('oldest')} />
         </View>
       </View>
     </View>
@@ -88,64 +76,14 @@ export function MemorySearchControls({
 const styles = StyleSheet.create({
   container: {
     gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-  },
-  searchInput: {
-    ...textTokens.body,
-    backgroundColor: colors.background,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    color: colors.text,
   },
   row: {
     gap: spacing.xs,
   },
-  label: {
-    ...textTokens.caption,
-    color: colors.mutedText,
-    fontWeight: '600',
-  },
-  pillRow: {
+  chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
-  },
-  pill: {
-    borderRadius: radius.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderWidth: 1,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pillActive: {
-    backgroundColor: '#e8f1ff',
-    borderColor: colors.primary,
-  },
-  pillInactive: {
-    backgroundColor: colors.background,
-    borderColor: colors.border,
-  },
-  pillPressed: {
-    opacity: 0.9,
-  },
-  pillText: {
-    ...textTokens.body,
-  },
-  pillTextActive: {
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  pillTextInactive: {
-    color: colors.text,
   },
 });
 

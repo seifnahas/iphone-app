@@ -1,6 +1,6 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, Image, Linking, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Linking, StyleSheet, View } from 'react-native';
 
 import { NoteBlocksRenderer } from '@/components/notes/NoteBlocksRenderer';
 import { Screen } from '@/components/Screen';
@@ -11,6 +11,7 @@ import { listMediaByMemoryId } from '@/lib/db/media';
 import { normalizeNoteBlocks } from '@/lib/noteBlocks';
 import * as logger from '@/lib/logger';
 import { colors, radius, spacing, text as textTokens } from '@/components/ui/tokens';
+import { Text } from '@/components/ui/Text';
 import { useMemoriesStore } from '@/store/memoriesStore';
 import { Memory } from '@/types/models';
 
@@ -194,7 +195,7 @@ export default function MemoryDetailScreen() {
             <Card style={styles.sectionCard}>
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionTitle}>Attached song</Text>
-                <Button title="Edit song" onPress={handleEdit} size="sm" variant="secondary" />
+                <Button title="Edit song" onPress={handleEdit} size="sm" variant="ghost" />
               </View>
               <View style={styles.songContent}>
                 <Image
@@ -221,7 +222,7 @@ export default function MemoryDetailScreen() {
                 <Button
                   title="Play in Spotify"
                   onPress={() => handlePlayInSpotify(memory.song?.spotifyTrackId)}
-                  variant="secondary"
+                  variant="ghost"
                   size="md"
                 />
               </View>
@@ -258,7 +259,7 @@ export default function MemoryDetailScreen() {
               />
               <Button
                 title={isDeleting ? 'Deleting...' : 'Delete'}
-                variant="destructive"
+                variant="danger"
                 onPress={confirmDelete}
                 disabled={isDeleting}
                 loading={isDeleting}
@@ -319,7 +320,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   metaPill: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceMuted,
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: radius.md,
@@ -369,7 +370,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   errorText: {
-    color: colors.destructive,
+    color: colors.danger,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -409,7 +410,7 @@ const styles = StyleSheet.create({
   },
   previewWarning: {
     ...textTokens.caption,
-    color: colors.destructive,
+    color: colors.danger,
   },
   actionsCard: {
     gap: spacing.sm,
