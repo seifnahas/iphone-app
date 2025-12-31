@@ -1,8 +1,10 @@
 import React from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
+import { Divider } from '@/components/ui/Divider';
 import { colors, radius, spacing, text as textTokens } from '@/components/ui/tokens';
+import { Text } from '@/components/ui/Text';
 import { createNoteBlockId } from '@/lib/noteBlocks';
 import { NoteBlock } from '@/types/notes';
 
@@ -35,13 +37,15 @@ export function NoteBlocksEditor({ blocks, onChange }: NoteBlocksEditorProps) {
   return (
     <View style={styles.container}>
       <View style={styles.actionsRow}>
-        <Button title="Add heading" size="sm" variant="secondary" onPress={() => addBlock('heading')} />
-        <Button title="Add paragraph" size="sm" variant="secondary" onPress={() => addBlock('paragraph')} />
-        <Button title="Add divider" size="sm" variant="secondary" onPress={() => addBlock('divider')} />
+        <Button title="Add heading" size="sm" variant="subtle" onPress={() => addBlock('heading')} />
+        <Button title="Add paragraph" size="sm" variant="subtle" onPress={() => addBlock('paragraph')} />
+        <Button title="Add divider" size="sm" variant="subtle" onPress={() => addBlock('divider')} />
       </View>
 
       {!blocks.length ? (
-        <Text style={styles.placeholder}>Add headings, paragraphs, or dividers to structure this memory.</Text>
+        <Text variant="caption" muted style={styles.placeholder}>
+          Add headings, paragraphs, or dividers to structure this memory.
+        </Text>
       ) : null}
 
       <View style={styles.blocksStack}>
@@ -49,11 +53,11 @@ export function NoteBlocksEditor({ blocks, onChange }: NoteBlocksEditorProps) {
           if (block.type === 'divider') {
             return (
               <View key={block.id} style={styles.blockRow}>
-                <View style={styles.divider} />
+                <Divider style={styles.inlineDivider} />
                 <Button
                   title="Delete"
                   size="sm"
-                  variant="destructive"
+                  variant="danger"
                   onPress={() => handleDelete(block.id)}
                   style={styles.deleteButton}
                 />
@@ -64,19 +68,22 @@ export function NoteBlocksEditor({ blocks, onChange }: NoteBlocksEditorProps) {
           return (
             <View key={block.id} style={styles.blockRow}>
               <View style={styles.inputContainer}>
-                <Text style={styles.blockLabel}>{block.type === 'heading' ? 'Heading' : 'Paragraph'}</Text>
+                <Text variant="caption" muted style={styles.blockLabel}>
+                  {block.type === 'heading' ? 'Heading' : 'Paragraph'}
+                </Text>
                 <TextInput
                   style={[styles.input, block.type === 'heading' ? styles.headingInput : styles.paragraphInput]}
                   placeholder={block.type === 'heading' ? 'Add a heading' : 'Add a paragraph'}
                   value={block.text}
                   onChangeText={(text) => handleChangeText(block.id, text)}
                   multiline={block.type === 'paragraph'}
+                  placeholderTextColor={colors.mutedText}
                 />
               </View>
               <Button
                 title="Delete"
                 size="sm"
-                variant="destructive"
+                variant="danger"
                 onPress={() => handleDelete(block.id)}
                 style={styles.deleteButton}
               />
@@ -98,7 +105,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   placeholder: {
-    ...textTokens.caption,
     color: colors.mutedText,
   },
   blocksStack: {
@@ -117,14 +123,11 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   blockLabel: {
-    ...textTokens.caption,
-    color: colors.mutedText,
-    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   input: {
     width: '100%',
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
@@ -141,10 +144,10 @@ const styles = StyleSheet.create({
     minHeight: 72,
     textAlignVertical: 'top',
   },
-  divider: {
+  inlineDivider: {
     flex: 1,
-    height: 1,
-    backgroundColor: colors.border,
     marginVertical: spacing.sm,
   },
 });
+
+export default NoteBlocksEditor;

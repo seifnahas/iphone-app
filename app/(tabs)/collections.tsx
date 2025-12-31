@@ -1,7 +1,14 @@
+import Feather from '@expo/vector-icons/Feather';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Divider } from '@/components/ui/Divider';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Text } from '@/components/ui/Text';
+import { colors, spacing } from '@/components/ui/tokens';
 
 export default function CollectionsScreen() {
   const handleNewCollectionPress = () => {
@@ -10,42 +17,53 @@ export default function CollectionsScreen() {
 
   return (
     <Screen>
-      <View style={styles.header}>
-        <Text style={styles.title}>Collections</Text>
-        <Text style={styles.description}>
-          Group memories into collections. Creation and assignment features are coming soon.
-        </Text>
+      <View style={styles.stack}>
+        <Card elevated>
+          <View style={styles.header}>
+            <View style={styles.headerText}>
+              <Text variant="overline" muted>
+                Organize
+              </Text>
+              <Text variant="title">Collections</Text>
+              <Text variant="caption" muted>
+                Group memories into curated sets for trips, people, or themes.
+              </Text>
+            </View>
+            <Button
+            title="New collection"
+            variant="primary"
+            icon={<Feather name="plus" size={16} color="#ffffff" />}
+            onPress={handleNewCollectionPress}
+          />
+          </View>
+          <Divider />
+          <Text variant="caption" muted>
+            Collection creation and assignment flows are coming soon. Use the map to keep adding memories in the
+            meantime.
+          </Text>
+        </Card>
+
+        <Card>
+          <EmptyState
+            title="Nothing here yet"
+            description="Once collections are available, you'll see them listed here for quick browsing."
+            icon={<Feather name="folder" size={20} color={colors.text} />}
+            action={<Button title="Plan a set" variant="ghost" size="sm" onPress={handleNewCollectionPress} />}
+          />
+        </Card>
       </View>
-      <Pressable style={styles.button} onPress={handleNewCollectionPress}>
-        <Text style={styles.buttonText}>New Collection</Text>
-      </Pressable>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  stack: {
+    gap: spacing.md,
+  },
   header: {
-    gap: 8,
+    gap: spacing.md,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '600',
-  },
-  description: {
-    fontSize: 16,
-    color: '#4a4a4a',
-  },
-  button: {
-    marginTop: 8,
-    backgroundColor: '#0a84ff',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontWeight: '600',
-    fontSize: 16,
-    textAlign: 'center',
+  headerText: {
+    gap: spacing.xs,
   },
 });

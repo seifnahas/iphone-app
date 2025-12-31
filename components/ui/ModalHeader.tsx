@@ -1,8 +1,9 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Button } from './Button';
-import { colors, spacing, text as textTokens } from './tokens';
+import { spacing } from './tokens';
+import { Text } from './Text';
 
 type ModalHeaderProps = {
   title: string;
@@ -14,12 +15,14 @@ export function ModalHeader({ title, subtitle, onClose }: ModalHeaderProps) {
   return (
     <View style={styles.container}>
       <View style={styles.textColumn}>
-        <Text style={styles.title}>{title}</Text>
-        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+        <Text variant="title">{title}</Text>
+        {subtitle ? (
+          <Text variant="body" muted>
+            {subtitle}
+          </Text>
+        ) : null}
       </View>
-      {onClose ? (
-        <Button title="Close" variant="secondary" size="sm" onPress={onClose} />
-      ) : null}
+      {onClose ? <Button title="Close" variant="ghost" size="sm" onPress={onClose} /> : null}
     </View>
   );
 }
@@ -35,14 +38,6 @@ const styles = StyleSheet.create({
   textColumn: {
     flex: 1,
     gap: spacing.xs,
-  },
-  title: {
-    ...textTokens.title,
-    color: colors.text,
-  },
-  subtitle: {
-    ...textTokens.body,
-    color: colors.mutedText,
   },
 });
 

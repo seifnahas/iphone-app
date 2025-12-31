@@ -1,41 +1,51 @@
+import Feather from '@expo/vector-icons/Feather';
 import { Tabs } from 'expo-router';
 import React from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { colors, spacing } from '@/components/ui/tokens';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.mutedText,
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          borderTopWidth: 1,
+          height: 76,
+          paddingHorizontal: spacing.md,
+          paddingVertical: spacing.sm,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+        },
       }}
     >
       <Tabs.Screen
         name="map"
         options={{
           title: 'Map',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="map.fill" color={color} />,
+          tabBarIcon: ({ color }) => <Feather name="map" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="timeline"
         options={{
           title: 'Timeline',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="clock.fill" color={color} />,
+          tabBarIcon: ({ color }) => <Feather name="clock" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="collections"
         options={{
           title: 'Collections',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="square.stack.fill" color={color} />,
+          tabBarIcon: ({ color }) => <Feather name="layers" size={22} color={color} />,
         }}
       />
     </Tabs>

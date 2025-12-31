@@ -1,114 +1,133 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import Feather from '@expo/vector-icons/Feather';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
 
-import { Collapsible } from '@/components/ui/collapsible';
-import { ExternalLink } from '@/components/external-link';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fonts } from '@/constants/theme';
+import { Screen } from '@/components/Screen';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Divider } from '@/components/ui/Divider';
+import { Text } from '@/components/ui/Text';
+import { spacing, colors } from '@/components/ui/tokens';
 
-export default function TabTwoScreen() {
+const tips = [
+  {
+    title: 'Drop pins fast',
+    description: 'Long-press anywhere on the map to capture a memory with location details.',
+    icon: 'map-pin' as const,
+  },
+  {
+    title: 'Filter by vibe',
+    description: 'Search, filter by songs, and sort from newest to oldest in the timeline.',
+    icon: 'filter' as const,
+  },
+  {
+    title: 'Curate collections',
+    description: 'Plan future groups for trips, people, or seasons. Coming soon to this tab.',
+    icon: 'folder' as const,
+  },
+];
+
+export default function ExploreScreen() {
+  const router = useRouter();
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }
-    >
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}
-        >
-          Explore
-        </ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/react-logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+    <Screen>
+      <View style={styles.stack}>
+        <Card elevated>
+          <View style={styles.hero}>
+            <View style={styles.heroText}>
+              <Text variant="overline" muted>
+                Quick guide
+              </Text>
+              <Text variant="title">Explore the app</Text>
+              <Text variant="caption" muted>
+                A crisp overview of how to navigate pins, timelines, and collections.
+              </Text>
+            </View>
+            <Button
+              title="Open map"
+              variant="primary"
+              icon={<Feather name="map" size={16} color="#ffffff" />}
+              onPress={() => router.push('/map')}
+            />
+          </View>
+        </Card>
+
+        {tips.map((tip) => (
+          <Card key={tip.title}>
+            <View style={styles.tipRow}>
+              <View style={styles.tipIcon}>
+                <Feather name={tip.icon} size={18} color={colors.text} />
+              </View>
+              <View style={styles.tipCopy}>
+                <Text variant="subtitle">{tip.title}</Text>
+                <Text variant="caption" muted>
+                  {tip.description}
+                </Text>
+              </View>
+            </View>
+          </Card>
+        ))}
+
+        <Card>
+          <View style={styles.actionsRow}>
+            <Button
+              title="Go to timeline"
+              variant="ghost"
+              icon={<Feather name="clock" size={16} color={colors.text} />}
+              onPress={() => router.push('/timeline')}
+            />
+            <Button
+              title="Browse collections"
+              variant="ghost"
+              icon={<Feather name="layers" size={16} color={colors.text} />}
+              onPress={() => router.push('/collections')}
+            />
+          </View>
+          <Divider />
+          <Text variant="caption" muted>
+            Need anything else? Add a TODO above so we can clarify instead of guessing.
+          </Text>
+        </Card>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  stack: {
+    gap: spacing.md,
   },
-  titleContainer: {
+  hero: {
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  heroText: {
+    gap: spacing.xs,
+    flex: 1,
+  },
+  tipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  tipIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#eef2f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tipCopy: {
+    gap: spacing.xs,
+    flex: 1,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
 });

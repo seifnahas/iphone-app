@@ -6,7 +6,6 @@ import {
   Image,
   Pressable,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 
@@ -15,7 +14,8 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ModalHeader } from '@/components/ui/ModalHeader';
 import { TextField } from '@/components/ui/TextField';
-import { colors, radius, spacing, text as textTokens } from '@/components/ui/tokens';
+import { colors, radius, spacing } from '@/components/ui/tokens';
+import { Text } from '@/components/ui/Text';
 import { beginAuth } from '@/lib/spotify/spotifyAuth';
 import { searchTracks } from '@/lib/spotify/spotifyApi';
 import { useSongSelectionStore } from '@/store/songSelectionStore';
@@ -74,7 +74,9 @@ export default function SongPickerModal() {
       return (
         <Card style={styles.centerCard}>
           <ActivityIndicator />
-          <Text style={styles.caption}>Searching...</Text>
+          <Text variant="caption" muted>
+            Searching...
+          </Text>
         </Card>
       );
     }
@@ -82,7 +84,9 @@ export default function SongPickerModal() {
     if (error) {
       return (
         <Card style={styles.centerCard}>
-          <Text style={[styles.caption, styles.errorText]}>{error}</Text>
+          <Text variant="caption" style={styles.errorText}>
+            {error}
+          </Text>
           <Button title="Retry" onPress={() => setRefreshKey((key) => key + 1)} size="sm" />
         </Card>
       );
@@ -91,14 +95,18 @@ export default function SongPickerModal() {
     if (!hasSearched) {
       return (
         <Card style={styles.centerCard}>
-          <Text style={styles.caption}>Start typing to search for a song.</Text>
+          <Text variant="caption" muted>
+            Start typing to search for a song.
+          </Text>
         </Card>
       );
     }
 
     return (
       <Card style={styles.centerCard}>
-        <Text style={styles.caption}>No songs found. Try a different search.</Text>
+        <Text variant="caption" muted>
+          No songs found. Try a different search.
+        </Text>
       </Card>
     );
   };
@@ -121,14 +129,16 @@ export default function SongPickerModal() {
               style={styles.artwork}
             />
             <View style={styles.rowText}>
-              <Text style={styles.trackTitle} numberOfLines={1}>
+              <Text variant="body" style={styles.trackTitle} numberOfLines={1}>
                 {item.title}
               </Text>
-              <Text style={styles.trackArtist} numberOfLines={1}>
+              <Text variant="caption" muted numberOfLines={1}>
                 {item.artist}
               </Text>
               {!item.previewUrl ? (
-                <Text style={styles.previewMissing}>Preview not available</Text>
+                <Text variant="caption" style={styles.previewMissing}>
+                  Preview not available
+                </Text>
               ) : null}
             </View>
           </Pressable>
@@ -153,7 +163,7 @@ export default function SongPickerModal() {
               <Button
                 title="Connect Spotify"
                 onPress={beginAuth}
-                variant="secondary"
+                variant="subtle"
                 size="sm"
                 style={styles.connectButton}
               />
@@ -193,12 +203,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     alignItems: 'center',
   },
-  caption: {
-    ...textTokens.body,
-    color: colors.mutedText,
-  },
   errorText: {
-    color: colors.destructive,
+    color: colors.danger,
   },
   listContent: {
     padding: spacing.lg,
@@ -218,24 +224,17 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   rowPressed: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceMuted,
   },
   rowText: {
     flex: 1,
     gap: 2,
   },
   trackTitle: {
-    ...textTokens.body,
-    color: colors.text,
     fontWeight: '600',
   },
-  trackArtist: {
-    ...textTokens.caption,
-    color: colors.mutedText,
-  },
   previewMissing: {
-    ...textTokens.caption,
-    color: colors.destructive,
+    color: colors.danger,
   },
   artwork: {
     width: 48,

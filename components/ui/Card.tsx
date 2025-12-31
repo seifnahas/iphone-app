@@ -1,25 +1,50 @@
 import React, { ReactNode } from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
 
-import { colors, radius, spacing, shadow } from './tokens';
+import { colors, hairlineWidth, radius, shadow, spacing } from './tokens';
 
 type CardProps = {
   children: ReactNode;
   style?: ViewStyle;
+  padded?: boolean;
+  elevated?: boolean;
+  muted?: boolean;
 };
 
-export function Card({ children, style }: CardProps) {
-  return <View style={[styles.card, style]}>{children}</View>;
+export function Card({ children, style, padded = true, elevated = false, muted = false }: CardProps) {
+  return (
+    <View
+      style={[
+        styles.card,
+        muted && styles.muted,
+        elevated && styles.elevated,
+        padded ? styles.padded : styles.unpadded,
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    ...shadow,
+    borderWidth: hairlineWidth,
+    borderRadius: radius.xl,
+  },
+  muted: {
+    backgroundColor: colors.surfaceMuted,
+  },
+  padded: {
+    padding: spacing.lg,
+  },
+  unpadded: {
+    padding: spacing.sm,
+  },
+  elevated: {
+    ...shadow.soft,
   },
 });
 

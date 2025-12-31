@@ -1,7 +1,9 @@
 import React from 'react';
-import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
+import { StyleSheet, TextInputProps, View } from 'react-native';
 
-import { colors, radius, spacing, text as textTokens } from './tokens';
+import { colors, spacing } from './tokens';
+import { Input } from './Input';
+import { Text } from './Text';
 
 type TextFieldProps = {
   label: string;
@@ -15,6 +17,7 @@ type TextFieldProps = {
   helperText?: string;
   errorText?: string;
   testID?: string;
+  secureTextEntry?: boolean;
 };
 
 export function TextField({
@@ -29,11 +32,16 @@ export function TextField({
   helperText,
   errorText,
   testID,
+  secureTextEntry,
 }: TextFieldProps) {
+  const showHelper = helperText && !errorText;
+
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
+      <Text variant="caption" muted style={styles.label}>
+        {label}
+      </Text>
+      <Input
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
@@ -42,17 +50,19 @@ export function TextField({
         autoCapitalize={autoCapitalize}
         keyboardType={keyboardType}
         textContentType={textContentType}
-        style={[
-          styles.input,
-          multiline && styles.multiline,
-          errorText ? styles.inputError : styles.inputDefault,
-        ]}
         testID={testID}
+        secureTextEntry={secureTextEntry}
+        style={[styles.input, multiline && styles.multiline, errorText ? styles.inputError : undefined]}
       />
+      {showHelper ? (
+        <Text variant="caption" muted>
+          {helperText}
+        </Text>
+      ) : null}
       {errorText ? (
-        <Text style={styles.errorText}>{errorText}</Text>
-      ) : helperText ? (
-        <Text style={styles.helperText}>{helperText}</Text>
+        <Text variant="caption" style={styles.errorText}>
+          {errorText}
+        </Text>
       ) : null}
     </View>
   );
@@ -63,35 +73,20 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   label: {
-    ...textTokens.caption,
-    color: colors.mutedText,
+    letterSpacing: 0.4,
   },
   input: {
-    ...textTokens.body,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderRadius: radius.md,
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    color: colors.text,
-  },
-  inputDefault: {
-    borderColor: colors.border,
-  },
-  inputError: {
-    borderColor: colors.destructive,
   },
   multiline: {
     minHeight: 96,
     textAlignVertical: 'top',
   },
-  helperText: {
-    ...textTokens.caption,
-    color: colors.mutedText,
+  inputError: {
+    borderColor: colors.danger,
   },
   errorText: {
-    ...textTokens.caption,
-    color: colors.destructive,
+    color: colors.danger,
   },
 });
 
