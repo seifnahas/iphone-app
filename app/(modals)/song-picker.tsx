@@ -67,83 +67,96 @@ export default function SongPickerModal() {
     router.back();
   };
 
-  return (
-    <Screen scroll>
-      <View style={styles.header}>
-        <Text style={styles.title}>Song Picker</Text>
-        <Text style={styles.subtitle}>Search Spotify to attach a preview to your memory.</Text>
-      </View>
-
-      <Card style={styles.card}>
-        <TextField
-          label="Search"
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Search tracks or artists"
-          autoCapitalize="none"
-          testID="song-search-input"
-        />
-        <Button
-          title="Connect Spotify"
-          onPress={beginAuth}
-          variant="secondary"
-          size="sm"
-          style={styles.connectButton}
-        />
-      </Card>
-
-      {isLoading ? (
+  const renderListEmpty = () => {
+    if (isLoading) {
+      return (
         <Card style={styles.centerCard}>
           <ActivityIndicator />
           <Text style={styles.caption}>Searching...</Text>
         </Card>
-      ) : error ? (
+      );
+    }
+
+    if (error) {
+      return (
         <Card style={styles.centerCard}>
           <Text style={[styles.caption, styles.errorText]}>{error}</Text>
           <Button title="Retry" onPress={() => setRefreshKey((key) => key + 1)} size="sm" />
         </Card>
-      ) : results.length === 0 && hasSearched ? (
+      );
+    }
+
+    if (!hasSearched) {
+      return (
         <Card style={styles.centerCard}>
-          <Text style={styles.caption}>No songs found. Try a different search.</Text>
+          <Text style={styles.caption}>Start typing to search for a song.</Text>
         </Card>
-      ) : (
-        <FlatList
-          data={results}
-          keyExtractor={(item) => item.spotifyTrackId}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-          renderItem={({ item }) => (
-            <Pressable onPress={() => handleSelect(item)} style={styles.row}>
-              <Image
-                source={
-                  item.albumArtUrl
-                    ? { uri: item.albumArtUrl }
-                    : require('@/assets/images/icon.png')
-                }
-                style={styles.artwork}
+      );
+    }
+
+    return (
+      <Card style={styles.centerCard}>
+        <Text style={styles.caption}>No songs found. Try a different search.</Text>
+      </Card>
+    );
+  };
+
+  return (
+    <Screen>
+      <FlatList
+        data={results}
+        keyExtractor={(item) => item.spotifyTrackId}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        renderItem={({ item }) => (
+          <Pressable onPress={() => handleSelect(item)} style={styles.row}>
+            <Image
+              source={
+                item.albumArtUrl ? { uri: item.albumArtUrl } : require('@/assets/images/icon.png')
+              }
+              style={styles.artwork}
+            />
+            <View style={styles.rowText}>
+              <Text style={styles.trackTitle} numberOfLines={1}>
+                {item.title}
+              </Text>
+              <Text style={styles.trackArtist} numberOfLines={1}>
+                {item.artist}
+              </Text>
+              {!item.previewUrl ? (
+                <Text style={styles.previewMissing}>Preview not available</Text>
+              ) : null}
+            </View>
+          </Pressable>
+        )}
+        ListHeaderComponent={
+          <View style={styles.headerContainer}>
+            <View style={styles.header}>
+              <Text style={styles.title}>Song Picker</Text>
+              <Text style={styles.subtitle}>Search Spotify to attach a preview to your memory.</Text>
+            </View>
+
+            <Card style={styles.card}>
+              <TextField
+                label="Search"
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Search tracks or artists"
+                autoCapitalize="none"
+                testID="song-search-input"
               />
-              <View style={styles.rowText}>
-                <Text style={styles.trackTitle} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Text style={styles.trackArtist} numberOfLines={1}>
-                  {item.artist}
-                </Text>
-                {!item.previewUrl ? (
-                  <Text style={styles.previewMissing}>Preview not available</Text>
-                ) : null}
-              </View>
-            </Pressable>
-          )}
-          ListEmptyComponent={
-            hasSearched ? null : (
-              <Card style={styles.centerCard}>
-                <Text style={styles.caption}>Start typing to search for a song.</Text>
-              </Card>
-            )
-          }
-          contentContainerStyle={styles.listContent}
-        />
-      )}
+              <Button
+                title="Connect Spotify"
+                onPress={beginAuth}
+                variant="secondary"
+                size="sm"
+                style={styles.connectButton}
+              />
+            </Card>
+          </View>
+        }
+        ListEmptyComponent={renderListEmpty}
+        contentContainerStyle={styles.listContent}
+      />
     </Screen>
   );
 }
@@ -163,6 +176,9 @@ const styles = StyleSheet.create({
   header: {
     gap: spacing.xs,
     marginBottom: spacing.md,
+  },
+  headerContainer: {
+    gap: spacing.md,
   },
   title: {
     ...textTokens.title,
@@ -190,7 +206,8 @@ const styles = StyleSheet.create({
     color: colors.destructive,
   },
   listContent: {
-    marginTop: spacing.md,
+    padding: spacing.lg,
+    gap: spacing.md,
   },
   row: {
     flexDirection: 'row',

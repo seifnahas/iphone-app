@@ -1,15 +1,14 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Image, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { Alert, Image, Linking, StyleSheet, Text, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { colors, radius, spacing, text as textTokens } from '@/components/ui/tokens';
-import { getState, pause, play, stop, subscribe, PlaybackState } from '@/lib/audio/playbackManager';
-import * as logger from '@/lib/logger';
 import { getMemoryById } from '@/lib/db/memories';
 import { listMediaByMemoryId } from '@/lib/db/media';
+import * as logger from '@/lib/logger';
+import { colors, radius, spacing, text as textTokens } from '@/components/ui/tokens';
 import { useMemoriesStore } from '@/store/memoriesStore';
 import { Memory } from '@/types/models';
 
@@ -23,7 +22,6 @@ export default function MemoryDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [playbackState, setPlaybackState] = useState<PlaybackState>(getState());
 
   useFocusEffect(
     useCallback(() => {
@@ -68,25 +66,35 @@ export default function MemoryDetailScreen() {
     }, [memoryId]),
   );
 
-  useEffect(() => {
-    const unsubscribe = subscribe((state) => setPlaybackState(state));
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    if (memory?.song?.previewUrl) {
-      play(memory.song);
-    } else {
-      stop();
-    }
-
-    return () => {
-      stop();
-    };
-  }, [memory?.song?.spotifyTrackId, memory?.song?.previewUrl]);
-
   const handleEdit = () => {
     router.push({ pathname: '/(modals)/memory-editor', params: { id: memoryId } });
+  };
+
+  const handlePlayInSpotify = async (trackId?: string) => {
+    if (!trackId) return;
+
+    const appUrl = `spotify:track:${trackId}`;
+    const webUrl = `https://open.spotify.com/track/${trackId}`;
+
+    try {
+      const canOpenApp = await Linking.canOpenURL(appUrl);
+      if (canOpenApp) {
+        await Linking.openURL(appUrl);
+        return;
+      }
+
+      const canOpenWeb = await Linking.canOpenURL(webUrl);
+      if (canOpenWeb) {
+        await Linking.openURL(webUrl);
+        return;
+      }
+
+      logger.error('Unable to open Spotify URLs', trackId);
+      Alert.alert('Unable to open Spotify right now.');
+    } catch (linkError) {
+      logger.error('Failed to open Spotify link', trackId, linkError);
+      Alert.alert('Unable to open Spotify right now.');
+    }
   };
 
   const confirmDelete = () => {
@@ -117,20 +125,6 @@ export default function MemoryDetailScreen() {
       },
     ]);
   };
-
-  const handlePlayPause = () => {
-    if (!memory?.song?.previewUrl) return;
-
-    if (playbackState.status === 'playing') {
-      pause();
-    } else {
-      play(memory.song);
-    }
-  };
-
-  const isSongPlaying =
-    playbackState.trackId === memory?.song?.spotifyTrackId &&
-    playbackState.status === 'playing';
 
   return (
     <Screen scroll>
@@ -167,10 +161,11 @@ export default function MemoryDetailScreen() {
 
           {memory.song ? (
             <Card>
-              <View style={styles.sectionHeader}>
+              <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionTitle}>Song</Text>
+                <Button title="Edit" onPress={handleEdit} size="sm" variant="secondary" />
               </View>
-              <View style={styles.songRow}>
+              <View style={styles.songContent}>
                 <Image
                   source={
                     memory.song.albumArtUrl
@@ -180,22 +175,21 @@ export default function MemoryDetailScreen() {
                   style={styles.songArt}
                 />
                 <View style={styles.songMeta}>
-                  <Text style={styles.songTitle}>{memory.song.title}</Text>
-                  <Text style={styles.songArtist}>{memory.song.artist}</Text>
-                  {!memory.song.previewUrl ? (
-                    <Text style={styles.previewWarning}>Preview not available.</Text>
-                  ) : playbackState.error ? (
-                    <Text style={styles.previewWarning}>{playbackState.error}</Text>
-                  ) : null}
+                  <Text style={styles.songTitle} numberOfLines={1}>
+                    {memory.song.title}
+                  </Text>
+                  <Text style={styles.songArtist} numberOfLines={1}>
+                    {memory.song.artist}
+                  </Text>
                 </View>
-                {memory.song.previewUrl ? (
-                  <Button
-                    title={isSongPlaying ? 'Pause' : 'Play'}
-                    onPress={handlePlayPause}
-                    size="sm"
-                    variant="secondary"
-                  />
-                ) : null}
+              </View>
+              <View style={styles.songActions}>
+                <Button
+                  title="Play in Spotify"
+                  onPress={() => handlePlayInSpotify(memory.song?.spotifyTrackId)}
+                  size="sm"
+                />
+                {/* TODO: Add copy link action when clipboard support is available. */}
               </View>
             </Card>
           ) : null}
@@ -275,6 +269,13 @@ const styles = StyleSheet.create({
   sectionHeader: {
     marginBottom: spacing.sm,
   },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
   sectionTitle: {
     ...textTokens.caption,
     color: colors.mutedText,
@@ -312,10 +313,11 @@ const styles = StyleSheet.create({
   errorText: {
     color: colors.destructive,
   },
-  songRow: {
+  songContent: {
     flexDirection: 'row',
     gap: spacing.md,
     alignItems: 'center',
+    marginBottom: spacing.md,
   },
   songArt: {
     width: 56,
@@ -336,8 +338,8 @@ const styles = StyleSheet.create({
     ...textTokens.caption,
     color: colors.mutedText,
   },
-  previewWarning: {
-    ...textTokens.caption,
-    color: colors.destructive,
+  songActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
 });
