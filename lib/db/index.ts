@@ -19,6 +19,7 @@ export async function initDb() {
         id TEXT PRIMARY KEY,
         title TEXT NULL,
         body TEXT NULL,
+        noteBlocks TEXT NULL,
         createdAt TEXT NOT NULL,
         happenedAt TEXT NOT NULL,
         latitude REAL NOT NULL,
@@ -46,14 +47,14 @@ export async function initDb() {
 
     await db.execAsync('CREATE INDEX IF NOT EXISTS idx_memories_happened_at ON memories(happenedAt);');
     await db.execAsync('CREATE INDEX IF NOT EXISTS idx_media_memory_id ON memory_media(memoryId);');
-    await ensureSongColumns(db);
+    await ensureAdditionalColumns(db);
   } catch (error) {
     logger.error('Failed to initialize database', error);
     throw error;
   }
 }
 
-async function ensureSongColumns(db: SQLite.SQLiteDatabase) {
+async function ensureAdditionalColumns(db: SQLite.SQLiteDatabase) {
   const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(memories);');
   const columnNames = new Set(columns.map((column) => column.name));
 
@@ -64,6 +65,7 @@ async function ensureSongColumns(db: SQLite.SQLiteDatabase) {
   };
 
   try {
+    await maybeAddColumn('noteBlocks', 'TEXT NULL');
     await maybeAddColumn('songSpotifyTrackId', 'TEXT NULL');
     await maybeAddColumn('songTitle', 'TEXT NULL');
     await maybeAddColumn('songArtist', 'TEXT NULL');

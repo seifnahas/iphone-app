@@ -1,4 +1,5 @@
 import * as logger from '@/lib/logger';
+import { normalizeNoteBlocks } from '@/lib/noteBlocks';
 import { Memory } from '@/types/models';
 
 export type MemorySongFilter = 'all' | 'withSong' | 'withoutSong';
@@ -11,7 +12,12 @@ export const memoryMatchesQuery = (memory: Memory, normalizedQuery: string) => {
     return true;
   }
 
-  const fields = [memory.title, memory.body, memory.placeLabel];
+  const noteBlockText = normalizeNoteBlocks(memory)
+    .filter((block) => block.type !== 'divider')
+    .map((block) => block.text)
+    .join(' ');
+
+  const fields = [memory.title, memory.body, memory.placeLabel, noteBlockText];
   return fields.some((field) => field && normalizeText(field).includes(normalizedQuery));
 };
 
